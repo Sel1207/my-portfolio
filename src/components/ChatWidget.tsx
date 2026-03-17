@@ -113,7 +113,7 @@ ${JSON.stringify(KARL_DATABASE)}
 
 STRICT RESPONSE RULES (HIGHEST PRIORITY):
 - Answer MUST be concise, direct, and technical.
-- Maximum 2-4 sentences unless explicitly asked for more.
+- Maximum 2-3 sentences unless explicitly asked for more.
 - Do NOT explain unnecessarily.
 - Do NOT add filler, introductions, or conclusions.
 - Only answer what is asked! No extra context.
@@ -233,12 +233,12 @@ Tone: precise, minimal, professional.
         )}
       </AnimatePresence>
 
-      {/* SLEEK BUTTON - SIZE MATCHED TO 'GO TO TOP' W/ NO BORDER */}
+      {/* SLEEK BUTTON - FORCED NO BORDER & NO FOCUS RING */}
       <motion.button
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         onClick={() => setIsOpen(!isOpen)}
-        className="w-14 h-14 rounded-full bg-sky-500 text-white shadow-xl flex items-center justify-center hover:bg-sky-600 transition-all z-50"
+        className="w-14 h-14 rounded-full bg-sky-500 text-white shadow-xl flex items-center justify-center hover:bg-sky-600 transition-all z-50 border-none outline-none focus:outline-none focus:ring-0"
       >
         {isOpen ? <X className="w-6 h-6" /> : <MessageSquare className="w-6 h-6" />}
       </motion.button>
