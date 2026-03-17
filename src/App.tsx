@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion'; // Added this
+import { motion } from 'framer-motion';
 import { ThemeProvider } from '@/hooks/useTheme';
 import { Navigation } from '@/sections/Navigation';
 import { Hero } from '@/sections/Hero';
@@ -11,6 +11,8 @@ import { Testimonials } from '@/sections/Testimonials';
 import { Contact } from '@/sections/Contact';
 import { Footer } from '@/sections/Footer';
 import { ScrollProgress } from '@/components/ScrollProgress';
+// 1. Added your ChatWidget import here
+import { ChatWidget } from '@/components/ChatWidget'; 
 import './App.css';
 
 // This is a "Wrapper" component. It makes things fade and slide up.
@@ -46,6 +48,10 @@ function App() {
           <Reveal><Contact /></Reveal>
         </main>
         <Footer />
+        
+        {/* 2. Added the floating ChatWidget here */}
+        <ChatWidget />
+        
       </div>
     </ThemeProvider>
   );

@@ -107,7 +107,8 @@ export function Footer() {
         {/* Back to Top Button */}
         <button
           onClick={scrollToTop}
-          className="fixed bottom-8 right-8 w-14 h-14 rounded-full bg-sky-500 text-white shadow-[0_0_20px_rgba(56,189,248,0.4)] flex items-center justify-center hover:bg-sky-400 hover:shadow-[0_0_30_rgba(56,189,248,0.6)] transition-all duration-300 hover:scale-110 z-40"
+          // Changed from bottom-8 right-8 to bottom-24 right-6
+          className="fixed bottom-24 right-6 w-14 h-14 rounded-full bg-sky-500 text-white shadow-[0_0_20px_rgba(56,189,248,0.4)] flex items-center justify-center hover:bg-sky-400 hover:shadow-[0_0_30_rgba(56,189,248,0.6)] transition-all duration-300 hover:scale-110 z-40"
           aria-label="Back to top"
         >
           <ArrowUp className="h-6 w-6" />

@@ -52,17 +52,24 @@ export function Certifications() {
         </motion.div>
 
         {/* Achievements Grid with Spotlight */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
-          {achievements.map((achievement, index) => (
-            <motion.div key={achievement.label} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: index * 0.1 }}>
-              <SpotlightCard className="p-5 text-center h-full">
-                <div className="text-3xl font-bold text-accent-blue mb-1">{achievement.count}</div>
-                <div className="font-semibold text-sm mb-1 text-foreground">{achievement.label}</div>
-                <div className="text-xs text-muted-foreground">{achievement.description}</div>
-              </SpotlightCard>
-            </motion.div>
-          ))}
-        </div>
+<div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
+  {achievements.map((achievement, index) => (
+    <motion.div 
+      // Changed from achievement.label to a unique combination
+      key={`${achievement.label}-${index}`} 
+      initial={{ opacity: 0, y: 20 }} 
+      whileInView={{ opacity: 1, y: 0 }} 
+      viewport={{ once: true }} 
+      transition={{ delay: index * 0.1 }}
+    >
+      <SpotlightCard className="p-5 text-center h-full">
+        <div className="text-3xl font-bold text-accent-blue mb-1">{achievement.count}</div>
+        <div className="font-semibold text-sm mb-1 text-foreground">{achievement.label}</div>
+        <div className="text-xs text-muted-foreground">{achievement.description}</div>
+      </SpotlightCard>
+    </motion.div>
+  ))}
+</div>
 
         {/* Certifications List with Spotlight */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
