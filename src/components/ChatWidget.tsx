@@ -2,12 +2,12 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageSquare, X, Send, Bot } from 'lucide-react'; // Removed Loader2
+import { MessageSquare, X, Send } from 'lucide-react';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 // --- YOUR COMPREHENSIVE DATABASE ---
 const KARL_DATABASE = {
-  role: "Professional AI Representative for Karl Philip C. Espino",
+  role: "I am Karl Philip C. Espino, an electrical engineering student.",
   general: {
     name: "Karl Philip C. Espino",
     age: 21,
@@ -75,19 +75,96 @@ const KARL_DATABASE = {
 
 const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
 
+const getCurrentTime = () => new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+const INITIAL_MESSAGE = "Hello! I'm Karl. Thanks for visiting my portfolio. What would you like to know about my engineering background or projects?";
+const SUGGESTED_QUESTIONS = [
+  "Could you tell me more about your ongoing thesis?",
+  "What are your strongest technical skills?",
+  "Can I see your resume?"
+];
+
+const renderTextWithLinks = (text: string) => {
+  const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
+  const parts = [];
+  let lastIndex = 0;
+  let match;
+
+  while ((match = linkRegex.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(text.substring(lastIndex, match.index));
+    }
+    parts.push(
+      <a 
+        key={match.index} 
+        href={match[2]} 
+        target="_blank" 
+        rel="noopener noreferrer"
+        className="underline underline-offset-2 font-semibold hover:opacity-80 transition-opacity"
+      >
+        {match[1]}
+      </a>
+    );
+    lastIndex = linkRegex.lastIndex;
+  }
+  
+  if (lastIndex < text.length) {
+    parts.push(text.substring(lastIndex));
+  }
+  return parts.length > 0 ? parts : text;
+};
+
 export function ChatWidget() {
   const [isOpen, setIsOpen] = useState(false);
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [hasUnread, setHasUnread] = useState(false); 
+  
   const [messages, setMessages] = useState([
-    { role: 'model', text: "Hello. I'm Karl's AI representative. How can I assist with your technical or professional inquiry today?" }
+    { role: 'model', text: INITIAL_MESSAGE, timestamp: getCurrentTime() }
   ]);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  
+  const isFirstLoad = useRef(true);
+  
+  // FIX 1: We use a ref to track the open state without triggering re-renders in the useEffect
+  const isOpenRef = useRef(isOpen);
+  useEffect(() => {
+    isOpenRef.current = isOpen;
+  }, [isOpen]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // FIX 2: This effect NOW ONLY runs when the `messages` array changes. 
+  // It completely ignores when you open/close the chat.
+  useEffect(() => {
+    if (isFirstLoad.current) {
+      const timer = setTimeout(() => {
+        if (!isOpenRef.current) setHasUnread(true);
+      }, 3000);
+      isFirstLoad.current = false;
+      return () => clearTimeout(timer);
+    } else {
+      const lastMessage = messages[messages.length - 1];
+      // Only show the badge if the AI just sent a message AND the chat is currently closed
+      if (lastMessage && lastMessage.role === 'model' && !isOpenRef.current) {
+        setHasUnread(true);
+      }
+    }
+  }, [messages]); 
+
+  // FIX 3: Explicit open and close functions to guarantee the badge clears properly
+  const handleOpenChat = () => {
+    setIsOpen(true);
+    setHasUnread(false); // Mark as read!
+  };
+
+  const handleCloseChat = () => {
+    setIsOpen(false);
+    // Notice we do NOT touch the `hasUnread` state here. It stays false.
+  };
 
   const handleSend = async (e?: React.FormEvent, presetQuery?: string) => {
     if (e) e.preventDefault();
@@ -95,7 +172,8 @@ export function ChatWidget() {
     if (!userText.trim() || isLoading) return;
 
     setMessage('');
-    setMessages(prev => [...prev, { role: 'user', text: userText }]);
+    
+    setMessages(prev => [...prev, { role: 'user', text: userText, timestamp: getCurrentTime() }]);
     setIsLoading(true);
 
     const modelPriority = ["gemini-3-flash-preview", "gemini-3.1-pro-preview", "gemini-3.1-flash-lite-preview"];
@@ -106,36 +184,31 @@ export function ChatWidget() {
           model: modelName,
           systemInstruction: {
             parts: [{ text: `
-IDENTITY: Professional AI for Karl Espino.
+IDENTITY: You are Karl Philip C. Espino. You are an electrical engineering student at Mapua University.
+You are speaking directly to visitors/recruiters on your personal portfolio website.
+Always use first-person pronouns ("I", "me", "my", "mine"). Do NOT act like an assistant. Act like Karl.
 
-DATABASE:
+DATABASE ABOUT YOU (KARL):
 ${JSON.stringify(KARL_DATABASE)}
 
 STRICT RESPONSE RULES (HIGHEST PRIORITY):
+- Speak in the first person (e.g., "I worked on...", "My thesis is...").
 - Answer MUST be concise, direct, and technical.
 - Answer professionally, avoiding any casual language or filler.
 - Maximum 2-3 sentences unless explicitly asked for more.
-- Do NOT explain unnecessarily.
-- Do NOT add filler, introductions, or conclusions.
 - Only answer what is asked! No extra context.
-- Answer straight to the point, straightforward.
 
-FORMATTING (MANDATORY):
-- Plain text only.
-- No markdown, no asterisks, no bold, no emojis.
-- Use '> ' for headers ONLY if needed.
-- Use '-' for lists ONLY if necessary.
+ACTION LINKS (CRITICAL):
+- If the user asks for your Resume/CV, you MUST reply using exactly this markdown format: [Download CV](/Karl_Espino_Resume.pdf)
+- If the user asks for your Email, you MUST reply using exactly this markdown format: [kpcespino@gmail.com](mailto:kpcespino@gmail.com)
+- You are allowed to embed these links naturally in your 2-3 sentence response.
 
-BEHAVIORAL CONSTRAINTS:
-- If question is simple → respond in 1–2 sentences.
-- If question is about Karl → pull ONLY relevant fields from DATABASE.
-- Do NOT restate the whole database.
-- Do NOT generalize or add external knowledge unless required.
+FORMATTING:
+- Plain text only (except for the Action Links above).
+- No asterisks, no bold, no emojis.
 
 FAILSAFE:
 If response exceeds guidelines, rewrite it shorter before sending.
-
-Tone: precise, minimal, clarity, conciseness, and professionalism. Emphasis on professionalism.
 ` }]
           }
         });
@@ -152,14 +225,14 @@ Tone: precise, minimal, clarity, conciseness, and professionalism. Emphasis on p
         const result = await chat.sendMessage(userText);
         const response = await result.response;
         
-        setMessages(prev => [...prev, { role: 'model', text: response.text() }]);
+        setMessages(prev => [...prev, { role: 'model', text: response.text(), timestamp: getCurrentTime() }]);
         setIsLoading(false);
         return; 
 
       } catch (error: any) {
         console.error(`[Diagnostics] Model ${modelName} failed:`, error);
         if (modelName === modelPriority[modelPriority.length - 1]) {
-          setMessages(prev => [...prev, { role: 'model', text: "Grid maintenance: Quota limit reached. Please try again in 60 seconds." }]);
+          setMessages(prev => [...prev, { role: 'model', text: "Grid maintenance: Quota limit reached. Please try again in 60 seconds.", timestamp: getCurrentTime() }]);
           setIsLoading(false);
         }
       }
@@ -176,50 +249,60 @@ Tone: precise, minimal, clarity, conciseness, and professionalism. Emphasis on p
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             className="mb-4 w-80 sm:w-96 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col h-[500px]"
           >
-            {/* Header */}
-            <div className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 p-4 flex items-center justify-between">
+            {/* MESSENGER STYLE HEADER */}
+            <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 p-4 flex items-center justify-between shadow-sm z-10">
               <div className="flex items-center gap-3">
-                <Bot className="w-5 h-5 text-sky-500" />
-                <span className="text-[11px] font-bold text-slate-900 dark:text-white uppercase tracking-widest">Karl's Technical Rep</span>
+                <div className="relative">
+                  <img src="/hero-portrait-chat.jpg" alt="Karl Philip Espino" className="w-10 h-10 rounded-full object-cover border border-slate-200 dark:border-slate-700" />
+                  <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white dark:border-slate-900 rounded-full"></span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-sm font-bold text-slate-900 dark:text-white leading-none">Karl Philip Espino</span>
+                  <span className="text-xs text-slate-500 dark:text-slate-400 mt-1">Active now</span>
+                </div>
               </div>
-              <button onClick={() => setIsOpen(false)}><X className="w-5 h-5 text-slate-400 hover:text-red-500 transition-colors" /></button>
+              <button onClick={handleCloseChat} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                <X className="w-5 h-5 text-slate-500" />
+              </button>
             </div>
 
-            {/* Chat Content */}
-            <div className="flex-1 p-4 overflow-y-auto flex flex-col gap-4 bg-slate-50/20 dark:bg-slate-950">
+            {/* CHAT CONTENT */}
+            <div className="flex-1 p-4 overflow-y-auto flex flex-col gap-5 bg-slate-50 dark:bg-slate-950/50">
               {messages.map((msg, idx) => (
-                <div key={idx} className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
-                  <div className={`p-3 rounded-2xl text-sm max-w-[85%] ${
-                    msg.role === 'user' 
-                      ? 'bg-sky-500 text-white rounded-tr-none' 
-                      : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 rounded-tl-none shadow-sm'
-                  }`}>
-                    <div className="whitespace-pre-wrap leading-relaxed">
-                      {msg.text}
+                <div key={idx} className={`flex gap-2 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
+                  
+                  {/* Avatar next to Karl's messages */}
+                  {msg.role === 'model' && (
+                    <img src="/hero-portrait-chat.jpg" alt="Karl" className="w-7 h-7 rounded-full object-cover self-end mb-5 shadow-sm" />
+                  )}
+                  
+                  {/* Bubble & Timestamp Container */}
+                  <div className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'} max-w-[75%]`}>
+                    <div className={`p-3 text-[14px] shadow-sm ${
+                      msg.role === 'user' 
+                        ? 'bg-sky-500 text-white rounded-2xl rounded-br-sm' 
+                        : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 rounded-2xl rounded-bl-sm'
+                    }`}>
+                      <div className="whitespace-pre-wrap leading-relaxed">
+                        {renderTextWithLinks(msg.text)}
+                      </div>
                     </div>
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 px-1 font-medium tracking-wide">
+                      {msg.timestamp}
+                    </span>
                   </div>
+
                 </div>
               ))}
 
-              {/* NEW: Bouncing Wave Typing Indicator */}
+              {/* MESSENGER STYLE TYPING INDICATOR */}
               {isLoading && (
-                <div className="flex gap-3">
-                  <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-tl-none shadow-sm flex items-center gap-1.5 w-fit h-10">
-                    <motion.div
-                      className="w-1.5 h-1.5 bg-slate-400 dark:bg-slate-500 rounded-full"
-                      animate={{ y: [0, -4, 0] }}
-                      transition={{ duration: 0.6, repeat: Infinity, ease: "easeInOut", delay: 0 }}
-                    />
-                    <motion.div
-                      className="w-1.5 h-1.5 bg-slate-400 dark:bg-slate-500 rounded-full"
-                      animate={{ y: [0, -4, 0] }}
-                      transition={{ duration: 0.6, repeat: Infinity, ease: "easeInOut", delay: 0.15 }}
-                    />
-                    <motion.div
-                      className="w-1.5 h-1.5 bg-slate-400 dark:bg-slate-500 rounded-full"
-                      animate={{ y: [0, -4, 0] }}
-                      transition={{ duration: 0.6, repeat: Infinity, ease: "easeInOut", delay: 0.3 }}
-                    />
+                <div className="flex gap-2">
+                  <img src="/hero-portrait-chat.jpg" alt="Karl" className="w-7 h-7 rounded-full object-cover self-end mb-5 shadow-sm" />
+                  <div className="p-3.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl rounded-bl-sm shadow-sm flex items-center gap-1.5 w-fit h-10">
+                    <motion.div className="w-1.5 h-1.5 bg-slate-400 dark:bg-slate-500 rounded-full" animate={{ y: [0, -4, 0] }} transition={{ duration: 0.6, repeat: Infinity, ease: "easeInOut", delay: 0 }} />
+                    <motion.div className="w-1.5 h-1.5 bg-slate-400 dark:bg-slate-500 rounded-full" animate={{ y: [0, -4, 0] }} transition={{ duration: 0.6, repeat: Infinity, ease: "easeInOut", delay: 0.15 }} />
+                    <motion.div className="w-1.5 h-1.5 bg-slate-400 dark:bg-slate-500 rounded-full" animate={{ y: [0, -4, 0] }} transition={{ duration: 0.6, repeat: Infinity, ease: "easeInOut", delay: 0.3 }} />
                   </div>
                 </div>
               )}
@@ -227,45 +310,63 @@ Tone: precise, minimal, clarity, conciseness, and professionalism. Emphasis on p
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Quick Chips */}
-            <div className="px-3 pb-2 flex gap-2 overflow-x-auto no-scrollbar">
-              {["Thesis", "Skills", "Achievements"].map((chip) => (
-                <button
-                  key={chip}
-                  onClick={() => handleSend(undefined, chip)}
-                  className="whitespace-nowrap px-3 py-1.5 bg-sky-50 dark:bg-sky-900/30 text-sky-600 dark:text-sky-400 rounded-full text-[10px] font-bold border border-sky-100 dark:border-sky-800 hover:bg-sky-500 hover:text-white transition-all"
-                >
-                  {chip}
-                </button>
-              ))}
-            </div>
+            {/* VERTICAL SUGGESTED QUESTIONS */}
+            {messages.length === 1 && !isLoading && (
+              <div className="px-4 pb-3 flex flex-col gap-2 items-end bg-slate-50 dark:bg-slate-950/50">
+                {SUGGESTED_QUESTIONS.map((question) => (
+                  <button
+                    key={question}
+                    onClick={() => handleSend(undefined, question)}
+                    className="text-left px-4 py-2 bg-white dark:bg-slate-900 text-sky-600 dark:text-sky-400 border border-sky-100 dark:border-slate-800/50 rounded-2xl rounded-br-sm text-[13px] hover:bg-sky-50 dark:hover:bg-slate-800 transition-all shadow-sm w-fit max-w-[85%]"
+                  >
+                    {question}
+                  </button>
+                ))}
+              </div>
+            )}
 
-            {/* Input */}
-            <form onSubmit={handleSend} className="p-3 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex gap-2">
+            {/* INPUT AREA */}
+            <form onSubmit={handleSend} className="p-3 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex gap-2 items-center">
               <input
                 type="text"
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                placeholder="Ask about my projects..."
-                className="flex-1 bg-slate-100 dark:bg-slate-950 border-none rounded-xl px-4 py-2 text-sm outline-none focus:ring-1 focus:ring-sky-500"
+                placeholder="Message Karl..."
+                className="flex-1 bg-slate-100 dark:bg-slate-800/50 border-none rounded-full px-4 py-2.5 text-[14px] outline-none focus:ring-1 focus:ring-sky-500 text-slate-800 dark:text-slate-200 placeholder-slate-500"
               />
-              <button type="submit" disabled={!message.trim() || isLoading} className="p-2 bg-sky-500 text-white rounded-xl hover:bg-sky-600 transition-all">
-                <Send className="w-4 h-4" />
+              <button type="submit" disabled={!message.trim() || isLoading} className="p-2.5 bg-sky-500 text-white rounded-full hover:bg-sky-600 transition-all disabled:opacity-50 disabled:hover:bg-sky-500">
+                <Send className="w-4 h-4 ml-0.5" />
               </button>
             </form>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* SLEEK BUTTON - FORCED NO BORDER & NO FOCUS RING */}
-      <motion.button
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-14 h-14 rounded-full bg-sky-500 text-white shadow-xl flex items-center justify-center hover:bg-sky-600 transition-all z-50 border-none outline-none focus:outline-none focus:ring-0"
-      >
-        {isOpen ? <X className="w-6 h-6" /> : <MessageSquare className="w-6 h-6" />}
-      </motion.button>
+      <div className="relative">
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={isOpen ? handleCloseChat : handleOpenChat}
+          className="w-14 h-14 rounded-full bg-sky-500 text-white shadow-xl flex items-center justify-center hover:bg-sky-600 transition-all z-50 border-none outline-none focus:outline-none focus:ring-0"
+        >
+          {isOpen ? <X className="w-6 h-6" /> : <MessageSquare className="w-6 h-6" />}
+        </motion.button>
+        
+        {/* THE UNREAD NOTIFICATION BADGE */}
+        <AnimatePresence>
+          {hasUnread && (
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0 }}
+              transition={{ type: "spring", bounce: 0.6, duration: 0.6 }}
+              className="absolute -top-1 -right-1 w-[22px] h-[22px] bg-red-500 rounded-full border-2 border-white dark:border-slate-900 flex items-center justify-center text-[11px] font-bold text-white shadow-sm z-50 pointer-events-none"
+            >
+              1
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
     </div>
   );
 }

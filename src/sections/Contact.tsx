@@ -58,6 +58,7 @@ export function Contact() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [errorMessage, setErrorMessage] = useState(''); // Added to handle any API errors
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormState((prev) => ({
@@ -69,18 +70,44 @@ export function Contact() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setErrorMessage('');
 
-    // Simulate form submission
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    try {
+      // Send data to Web3Forms API
+      const response = await fetch('https://api.web3forms.com/submit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify({
+          access_key: '06c80bca-5388-4de0-9609-beaffce264f3', // Your Access Key
+          from_name: 'Portfolio Contact Form', // Shows up as sender name in your email
+          subject: formState.subject,
+          name: formState.name,
+          email: formState.email,
+          message: formState.message,
+        }),
+      });
 
-    setIsSubmitting(false);
-    setIsSubmitted(true);
-    setFormState({ name: '', email: '', subject: '', message: '' });
+      const result = await response.json();
 
-    // Reset success message after 5 seconds
-    setTimeout(() => {
-      setIsSubmitted(false);
-    }, 5000);
+      if (result.success) {
+        setIsSubmitted(true);
+        setFormState({ name: '', email: '', subject: '', message: '' }); // Clear the form
+        
+        // Reset success message after 5 seconds
+        setTimeout(() => {
+          setIsSubmitted(false);
+        }, 5000);
+      } else {
+        setErrorMessage(result.message || 'Something went wrong. Please try again.');
+      }
+    } catch (error) {
+      setErrorMessage('Network error. Please check your internet connection.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -221,6 +248,10 @@ export function Contact() {
                 </div>
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-5">
+                  
+                  {/* Web3Forms Anti-Spam Honeypot */}
+                  <input type="checkbox" name="botcheck" className="hidden" style={{ display: 'none' }} />
+
                   <div className="grid sm:grid-cols-2 gap-5">
                     <div className="space-y-2">
                       <Label htmlFor="name">Name</Label>
@@ -275,6 +306,11 @@ export function Contact() {
                       className="rounded-xl resize-none"
                     />
                   </div>
+
+                  {/* Error Message Display */}
+                  {errorMessage && (
+                    <p className="text-red-500 text-sm font-medium">{errorMessage}</p>
+                  )}
 
                   <Button
                     type="submit"
