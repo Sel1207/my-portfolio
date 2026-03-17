@@ -12,38 +12,65 @@ const KARL_DATABASE = {
     name: "Karl Philip C. Espino",
     age: 21,
     location: "Arayat, Pampanga, Philippines",
-    contact: "kpcespino@gmail.com",
+    contact: {
+      personal_email: "kpcespino@gmail.com",
+      university_email: "kpcespino@mymail.mapua.edu.ph",
+      phone: "(+63) 936 666 6361"
+    },
     birthday: "January 12, 2005",
-    links: { linkedin: "linkedin.com/in/karl-philip-espino" }
+    languages: ["English", "Filipino", "Kapampangan"],
+    links: { 
+      linkedin: "linkedin.com/in/karl-philip-espino",
+      portfolio: "https://karl-philip-espino.vercel.app/"
+    }
   },
   academics: {
-    university: "Mapúa University (3rd Year)",
+    university: "Mapúa University (3rd Year, Aug 2023 - Present)",
     degree: "Joint BS/MS Electrical Engineering Program (BMEE)",
-    honors: "6-time President's Lister",
-    specialization: "Power System Protection (PSP)"
+    honors: "6-time President's Lister (AY 23-24: 1st, 2nd, 4th Term | AY 24-25: 1st, 2nd, 3rd Term)",
+    specialization: "Power System Protection (PSP)",
+    previous_education: "Mapúa SHS (STEM, Highest Honors), Justino Sevilla JHS (High Honors), San Nicolas ES (Valedictorian)"
   },
   thesis: {
     title: "Adaptive Power Swing Blocking for Distance Protection in Islanded Microgrids with Virtual Inertia BESS Using IEC 61850-Based Hybrid Architecture",
     keywords: ["IEC 61850", "BESS", "Virtual Inertia", "Grid Stability"]
   },
   projects: [
-    { title: "Data Analytics (2026)", desc: "Interactive Looker Studio dashboard for gaming patterns and well-being." },
-    { title: "Commercial Lighting", desc: "Standard-compliant mall lighting layout using DIALux evo." },
-    { title: "Residential Lighting", desc: "Simulated comprehensive lighting environments in DIALux evo." },
-    { title: "Transformer Winding (2025)", desc: "Designed, manually wound, and tested a functional electrical transformer." },
-    { title: "PLC Automation", desc: "Programmed a two-way-intersection traffic light sequence." },
-    { title: "Motor Engineering", desc: "Complete rewinding and verification of a 12V DC motor." },
-    { title: "Logic Circuitry", desc: "Garbage fill monitoring system with 7-segment visual tracking." },
-    { title: "Electronic Optimization", desc: "Calibrated BJT parameters for maximum voltage gains." },
-    { title: "Mechanical Modeling", desc: "Simulated dynamic mechanical responses in spring-mass systems." },
-    { title: "CAD Drafting", desc: "Drafted 2D architectural and structural floor plans using AutoCAD." }
+    { title: "Data Analytics (March 2026)", desc: "Interactive Looker Studio dashboard for gaming patterns and well-being." },
+    { title: "Commercial Lighting (Feb 2026)", desc: "Standard-compliant mall lighting layout using DIALux evo." },
+    { title: "Residential Lighting (Jan 2026)", desc: "Simulated comprehensive lighting environments in DIALux evo." },
+    { title: "Transformer Winding (July 2025)", desc: "Designed, manually wound, and tested a functional electrical transformer." },
+    { title: "PLC Automation (July 2025)", desc: "Programmed a two-way-intersection traffic light sequence." },
+    { title: "Motor Engineering (March 2025)", desc: "Complete rewinding and verification of a 12V DC motor." },
+    { title: "Logic Circuitry (March 2025)", desc: "Garbage fill monitoring system with 7-segment visual tracking & audio alerts." },
+    { title: "Electronic Optimization (Oct-Nov 2024)", desc: "Calibrated BJT parameters and designed amplifier circuits for maximum voltage gains." },
+    { title: "Mechanical Modeling (Aug 2024)", desc: "Simulated dynamic mechanical responses in spring-mass systems." },
+    { title: "CAD Drafting (May 2024)", desc: "Drafted 2D architectural and structural floor plans using AutoCAD." }
   ],
-  skills: ["DIALux evo", "AutoCAD", "ETAP", "LTSpice", "MATLAB", "PLC Programming (Omron)", "Python for Data Science"],
+  extracurriculars: [
+    { role: "Officer, Assistant Finance Committee Head", org: "IEEE of the Philippines, Inc. - MU (Feb 2026 - Present)", desc: "Secured corporate sponsorships and managed finances for major events." },
+    { role: "Officer, Auditor", org: "The Mapúa Society of Double Degree and Joint Program (July 2025 - Present)", desc: "Audited financial records and verified receipts to ensure strict fiscal transparency." },
+    { role: "Former Officer, Academic Committee Head", org: "IIEE of the Philippines, Inc. - MU (May 2024 - Present)", desc: "Orchestrated the IIEE Excellence Awards and managed logistics." },
+    { role: "Member", org: "Mapúa University DOST Scholars' Association (Oct 2023 - Present)", desc: "Engages in DOST-related programs and activities." },
+    { role: "Member", org: "Physics Society of Mapua (Oct 2023 - Present)", desc: "Participates in physics-focused events." }
+  ],
+  skills: {
+    software_and_engineering: ["DIALux evo", "AutoCAD", "ETAP", "LTSpice", "MATLAB", "TinaPro Simulation", "Python for Data Science", "Web Development"],
+    industrial: ["PLC Programming (Omron)", "Fluid Sim"],
+    tools: ["Microsoft Office", "Adobe InDesign", "Canva", "CapCut"],
+    soft_skills: ["Critical thinking", "Problem-solving", "Analytical reasoning", "Adaptability"]
+  },
   achievements: [
+    "1st Rank EECE Excellence Awards - Electrical Engineering Program, Batch 2023 (2024 & 2025)",
+    "1st Rank IIEE Excellence Awards - Batch 2023 (AY 2023-2024 & AY 2024-2025)",
     "2nd Place, IIEE-Regional Math Wizard Competition - NCR (2025)",
-    "Batch 2023 1st Rank (AY 2023–2024)",
-    "3x 1st Place Metrobank-MTAP Math Challenge"
-  ]
+    "3x 1st Place Metrobank-MTAP-DepEd Math Challenge (2018-2020)",
+    "3rd Place Math Quiz Bee Division Level - Pampanga (2017)"
+  ],
+  personal_details: {
+    hobbies: ["Piano, Guitar, and Organ", "Gaming (Dota 2, CS2, ML, Valorant)"],
+    fun_fact: "Was part of a Catholic Church Choir as an Organist for several years."
+  }
 };
 
 const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
@@ -77,7 +104,6 @@ export function ChatWidget() {
       try {
         const model = genAI.getGenerativeModel({
           model: modelName,
-          // FIX 1: Removed `role: "system"` which causes 400 errors in some API versions
           systemInstruction: {
             parts: [{ text: `
 IDENTITY: Professional AI for Karl Espino.
@@ -87,10 +113,11 @@ ${JSON.stringify(KARL_DATABASE)}
 
 STRICT RESPONSE RULES (HIGHEST PRIORITY):
 - Answer MUST be concise, direct, and technical.
-- Maximum 3–5 sentences unless explicitly asked for more.
+- Maximum 2-4 sentences unless explicitly asked for more.
 - Do NOT explain unnecessarily.
 - Do NOT add filler, introductions, or conclusions.
-- Only answer what is asked. No extra context.
+- Only answer what is asked! No extra context.
+- Answer straight to the point, straightforward.
 
 FORMATTING (MANDATORY):
 - Plain text only.
@@ -112,7 +139,6 @@ Tone: precise, minimal, professional.
           }
         });
 
-        // FIX 2: Safely extract history. Remove the first greeting, then take an even number of messages.
         const history = messages
           .slice(1) 
           .slice(-4) 
@@ -207,12 +233,12 @@ Tone: precise, minimal, professional.
         )}
       </AnimatePresence>
 
-      {/* FIX 3: Replaced the Zap icon with a clean, minimalistic MessageSquare */}
+      {/* SLEEK BUTTON - SIZE MATCHED TO 'GO TO TOP' W/ NO BORDER */}
       <motion.button
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         onClick={() => setIsOpen(!isOpen)}
-        className="w-14 h-14 rounded-full bg-sky-500 text-white shadow-xl flex items-center justify-center hover:bg-sky-400 z-50 border-4 border-white dark:border-slate-900"
+        className="w-14 h-14 rounded-full bg-sky-500 text-white shadow-xl flex items-center justify-center hover:bg-sky-600 transition-all z-50"
       >
         {isOpen ? <X className="w-6 h-6" /> : <MessageSquare className="w-6 h-6" />}
       </motion.button>
