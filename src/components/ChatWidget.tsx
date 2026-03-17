@@ -2,61 +2,49 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageSquare, X, Send, Bot, User, Loader2 } from 'lucide-react';
+import { MessageSquare, X, Send, Bot, User, Loader2, Zap } from 'lucide-react';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-// --- IMPROVED DATABASE: Structured for Better AI Retrieval ---
-const KARL_DATABASE = `
-[ROLE]
-You are the Professional AI Representative for Karl Philip C. Espino. 
-
-[GENERAL SUMMARY]
-- Name: Karl Philip C. Espino
-- Age: 21
-- Birthdate: January 12, 2005
-- Location: Arayat, Pampanga, Philippines
-- Email: kpcespino@gmail.com
-- LinkedIn: https://www.linkedin.com/in/karl-philip-espino
-
-[ACADEMIC SUMMARY]
-- Institution: Mapúa University (3rd Year)
-- Degree: Joint BS/MS Electrical Engineering Program (BMEE)
-- Honors: 6-time President's Lister
-- Specializations: Power System Protection (PSP).
-
-[CURRENT ONGOING THESIS: RESEARCH & DEVELOPMENT]
-- Title Focus: Adaptive Power Swing Blocking for Distance Protection in Islanded Microgrids with Virtual Inertia BESS Using IEC 61850-Based Hybrid Architecture.
-- Keywords: IEC 61850, BESS (Battery Energy Storage), Virtual Inertia, Grid Stability.
-
-[TECHNICAL SKILLS]
-- Design & Simulation: DIALux evo, AutoCAD, ETAP, LTSpice, MATLAB
-- Industrial: Omron PLC Programming, Protection Coordination, Fluid Sim
-- Data: Python for Data Science.
-
-[PROJECTS]
-- Data Analytics (March 2026): Developed an interactive Looker Studio dashboard to correlate gaming patterns with user well-being metrics.
-- Commercial Lighting Design (Feb 2026): Engineered a standard-compliant mall lighting layout using DIALux evo.
-- Residential Lighting Design (Jan 2026): Simulated comprehensive indoor and outdoor residential lighting environments in DIALux evo.
-- Transformer Winding (July 2025): Designed, manually wound, and performed testing on a functional electrical transformer.
-- PLC Automation (July 2025): Programmed a PLC to automate a complex two-way-intersection traffic light sequence.
-- Motor Engineering (March 2025): Executed the complete rewinding and performance verification of a 12V DC motor.
-- Logic Circuitry (March 2025): Designed a logic gate-based garbage fill monitoring system with 7-segment visual tracking and audio alerts.
-- Electronic Optimization (Oct – Nov 2024): Calibrated BJT parameters and designed amplifier circuits to achieve maximum signal amplification and specific voltage gains.
-- Mechanical Modeling (Aug 2024): Modeled and simulated dynamic mechanical responses within a spring-mass system case study.
-- CAD Drafting (May 2024): Drafted detailed 2D architectural and structural floor plans for residential projects using AutoCAD.
-
-[AWARDS & ACHIEVEMENTS]
-- IEE Excellence: Batch 2023 1st Rank (AY 2023–2024 and 1st Term AY 2024–2025).
-- Competitions: 2nd Place, IIEE-Regional Math Wizard Competition - NCR (2025).
-- Mathematics: 3x 1st Place in Metrobank-MTAP-DepEd Math Challenge (2018–2020).
-- Early Honors: Elementary School Valedictorian with special citations in Math, Science, Communication Arts. Most Obedient Student.
-
-[LEADERSHIP & ENGAGEMENT]
-- IEEE - MU: Assistant Finance Committee Head (2026–Present).
-- Double Degree Society: Auditor (2025–Present).
-- IIEE - MU: Former Academic Committee Head; orchestrated Excellence Awards.
-- Scholarships: Active member of the Mapúa University DOST Scholars' Association.
-`;
+// --- YOUR COMPREHENSIVE DATABASE ---
+const KARL_DATABASE = {
+  role: "Professional AI Representative for Karl Philip C. Espino",
+  general: {
+    name: "Karl Philip C. Espino",
+    age: 21,
+    location: "Arayat, Pampanga, Philippines",
+    contact: "kpcespino@gmail.com",
+    birthday: "January 12, 2005",
+    links: { linkedin: "linkedin.com/in/karl-philip-espino" }
+  },
+  academics: {
+    university: "Mapúa University (3rd Year)",
+    degree: "Joint BS/MS Electrical Engineering Program (BMEE)",
+    honors: "6-time President's Lister",
+    specialization: "Power System Protection (PSP)"
+  },
+  thesis: {
+    title: "Adaptive Power Swing Blocking for Distance Protection in Islanded Microgrids with Virtual Inertia BESS Using IEC 61850-Based Hybrid Architecture",
+    keywords: ["IEC 61850", "BESS", "Virtual Inertia", "Grid Stability"]
+  },
+  projects: [
+    { title: "Data Analytics (2026)", desc: "Interactive Looker Studio dashboard for gaming patterns and well-being." },
+    { title: "Commercial Lighting", desc: "Standard-compliant mall lighting layout using DIALux evo." },
+    { title: "Residential Lighting", desc: "Simulated comprehensive lighting environments in DIALux evo." },
+    { title: "Transformer Winding (2025)", desc: "Designed, manually wound, and tested a functional electrical transformer." },
+    { title: "PLC Automation", desc: "Programmed a two-way-intersection traffic light sequence." },
+    { title: "Motor Engineering", desc: "Complete rewinding and verification of a 12V DC motor." },
+    { title: "Logic Circuitry", desc: "Garbage fill monitoring system with 7-segment visual tracking." },
+    { title: "Electronic Optimization", desc: "Calibrated BJT parameters for maximum voltage gains." },
+    { title: "Mechanical Modeling", desc: "Simulated dynamic mechanical responses in spring-mass systems." },
+    { title: "CAD Drafting", desc: "Drafted 2D architectural and structural floor plans using AutoCAD." }
+  ],
+  skills: ["DIALux evo", "AutoCAD", "ETAP", "LTSpice", "MATLAB", "PLC Programming (Omron)", "Python for Data Science"],
+  achievements: [
+    "2nd Place, IIEE-Regional Math Wizard Competition - NCR (2025)",
+    "Batch 2023 1st Rank (AY 2023–2024)",
+    "3x 1st Place Metrobank-MTAP Math Challenge"
+  ]
+};
 
 const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
 
@@ -65,7 +53,7 @@ export function ChatWidget() {
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [messages, setMessages] = useState([
-    { role: 'model', text: "Hello. I'm Karl's AI representative. How can I assist with your inquiry today?" }
+    { role: 'model', text: "Hello. I'm Karl's AI representative. How can I assist with your technical or professional inquiry today?" }
   ]);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -74,44 +62,75 @@ export function ChatWidget() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const handleSend = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!message.trim() || isLoading) return;
+  const handleSend = async (e?: React.FormEvent, presetQuery?: string) => {
+    if (e) e.preventDefault();
+    const userText = presetQuery || message;
+    if (!userText.trim() || isLoading) return;
 
-    const userText = message;
     setMessage('');
     setMessages(prev => [...prev, { role: 'user', text: userText }]);
     setIsLoading(true);
 
-    try {
-      const model = genAI.getGenerativeModel({
-        model: "gemini-3-flash-preview", 
-        systemInstruction: `
-        IDENTITY: Professional, concise, and technically grounded AI.
-        
-        KNOWLEDGE: ${KARL_DATABASE}
-        
-        STRICT BEHAVIOR RULES:
-        1. GREETINGS: If the user says "Hi", "Hello", or similar, respond with ONE brief sentence. DO NOT introduce Karl yet unless asked.
-        2. BREVITY: Keep answers under 3 sentences unless explaining technical thesis details.
-        3. ACCURACY: Only use the provided DATABASE. If info is missing, say: "Karl hasn't added that to my database yet, but you can reach him at kpcespino@mymail.mapua.edu.ph."
-        4. TONE: Professional Engineer. Avoid "assistant-speak" like "I'm happy to help!"—stay objective.`
-      });
+    const modelPriority = ["gemini-3-flash-preview", "gemini-3.1-pro-preview", "gemini-3.1-flash-lite-preview"];
 
-      const history = messages.filter((_, i) => i !== 0).map(m => ({
-        role: m.role === 'user' ? 'user' : 'model',
-        parts: [{ text: m.text }]
-      }));
+    for (const modelName of modelPriority) {
+      try {
+        const model = genAI.getGenerativeModel({
+          model: modelName,
+          systemInstruction: {
+            role: "system",
+            parts: [{ text: `
+IDENTITY: Professional AI for Karl Espino.
 
-      const chat = model.startChat({ history });
-      const result = await chat.sendMessage(userText);
-      const response = await result.response;
-      
-      setMessages(prev => [...prev, { role: 'model', text: response.text() }]);
-    } catch (error: any) {
-      setMessages(prev => [...prev, { role: 'model', text: "Connection interrupted. Please try again." }]);
-    } finally {
-      setIsLoading(false);
+DATABASE:
+${JSON.stringify(KARL_DATABASE)}
+
+STRICT RESPONSE RULES (HIGHEST PRIORITY):
+- Answer MUST be concise, direct, and technical.
+- Maximum 3–5 sentences unless explicitly asked for more.
+- Do NOT explain unnecessarily.
+- Do NOT add filler, introductions, or conclusions.
+- Only answer what is asked. No extra context.
+
+FORMATTING (MANDATORY):
+- Plain text only.
+- No markdown, no asterisks, no bold, no emojis.
+- Use '> ' for headers ONLY if needed.
+- Use '-' for lists ONLY if necessary.
+
+BEHAVIORAL CONSTRAINTS:
+- If question is simple → respond in 1–2 sentences.
+- If question is about Karl → pull ONLY relevant fields from DATABASE.
+- Do NOT restate the whole database.
+- Do NOT generalize or add external knowledge unless required.
+
+FAILSAFE:
+If response exceeds guidelines, rewrite it shorter before sending.
+
+Tone: precise, minimal, professional.
+` }]
+          }
+        });
+
+        const history = messages.slice(-4).filter((_, i) => i !== 0).map(m => ({
+          role: m.role === 'user' ? 'user' : 'model',
+          parts: [{ text: m.text }]
+        }));
+
+        const chat = model.startChat({ history });
+        const result = await chat.sendMessage(userText);
+        const response = await result.response;
+        
+        setMessages(prev => [...prev, { role: 'model', text: response.text() }]);
+        setIsLoading(false);
+        return; 
+
+      } catch (error: any) {
+        if (modelName === modelPriority[modelPriority.length - 1]) {
+          setMessages(prev => [...prev, { role: 'model', text: "Grid maintenance: Quota limit reached. Please try again in 60 seconds." }]);
+          setIsLoading(false);
+        }
+      }
     }
   };
 
@@ -129,39 +148,53 @@ export function ChatWidget() {
             <div className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 p-4 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <Bot className="w-5 h-5 text-sky-500" />
-                <span className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-tight">Technical Assistant</span>
+                <span className="text-[11px] font-bold text-slate-900 dark:text-white uppercase tracking-widest">Karl's Technical Rep</span>
               </div>
-              <button onClick={() => setIsOpen(false)}><X className="w-5 h-5 text-slate-400 hover:text-slate-600" /></button>
+              <button onClick={() => setIsOpen(false)}><X className="w-5 h-5 text-slate-400 hover:text-red-500 transition-colors" /></button>
             </div>
 
             {/* Chat Content */}
-            <div className="flex-1 p-4 overflow-y-auto flex flex-col gap-4 bg-slate-50/50 dark:bg-slate-950/50">
+            <div className="flex-1 p-4 overflow-y-auto flex flex-col gap-4 bg-slate-50/20 dark:bg-slate-950">
               {messages.map((msg, idx) => (
                 <div key={idx} className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
-                  <div className={`p-3 rounded-2xl text-sm max-w-[85%] ${msg.role === 'user' ? 'bg-sky-500 text-white rounded-tr-none shadow-md' : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 rounded-tl-none shadow-sm'}`}>
-                    <div className="whitespace-pre-wrap leading-relaxed">{msg.text}</div>
+                  <div className={`p-3 rounded-2xl text-sm max-w-[85%] ${
+                    msg.role === 'user' 
+                      ? 'bg-sky-500 text-white rounded-tr-none' 
+                      : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 rounded-tl-none shadow-sm'
+                  }`}>
+                    <div className="whitespace-pre-wrap leading-relaxed">
+                      {msg.text}
+                    </div>
                   </div>
                 </div>
               ))}
-              {isLoading && (
-                <div className="flex gap-2 items-center text-slate-400 text-xs ml-2">
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                  <span>Processing...</span>
-                </div>
-              )}
+              {isLoading && <Loader2 className="w-4 h-4 animate-spin text-sky-500 self-center" />}
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Input Form */}
+            {/* Quick Chips */}
+            <div className="px-3 pb-2 flex gap-2 overflow-x-auto no-scrollbar">
+              {["Thesis", "Skills", "Achievements"].map((chip) => (
+                <button
+                  key={chip}
+                  onClick={() => handleSend(undefined, chip)}
+                  className="whitespace-nowrap px-3 py-1.5 bg-sky-50 dark:bg-sky-900/30 text-sky-600 dark:text-sky-400 rounded-full text-[10px] font-bold border border-sky-100 dark:border-sky-800 hover:bg-sky-500 hover:text-white transition-all"
+                >
+                  {chip}
+                </button>
+              ))}
+            </div>
+
+            {/* Input */}
             <form onSubmit={handleSend} className="p-3 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex gap-2">
               <input
                 type="text"
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                placeholder="Inquire about technical projects..."
-                className="flex-1 bg-slate-100 dark:bg-slate-950 border-none rounded-xl px-4 py-2 text-sm outline-none focus:ring-1 focus:ring-sky-500 transition-all"
+                placeholder="Ask about my projects..."
+                className="flex-1 bg-slate-100 dark:bg-slate-950 border-none rounded-xl px-4 py-2 text-sm outline-none focus:ring-1 focus:ring-sky-500"
               />
-              <button type="submit" disabled={!message.trim() || isLoading} className="p-2 bg-sky-500 text-white rounded-xl hover:bg-sky-600 active:scale-95 transition-all">
+              <button type="submit" disabled={!message.trim() || isLoading} className="p-2 bg-sky-500 text-white rounded-xl hover:bg-sky-600 transition-all">
                 <Send className="w-4 h-4" />
               </button>
             </form>
@@ -169,9 +202,14 @@ export function ChatWidget() {
         )}
       </AnimatePresence>
 
-      <button onClick={() => setIsOpen(!isOpen)} className="w-14 h-14 rounded-full bg-sky-500 text-white shadow-xl flex items-center justify-center hover:bg-sky-600 transition-transform active:scale-90">
-        {isOpen ? <X className="w-6 h-6" /> : <MessageSquare className="w-6 h-6" />}
-      </button>
+      <motion.button
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-14 h-14 rounded-full bg-sky-500 text-white shadow-xl flex items-center justify-center hover:bg-sky-400 z-50 border-4 border-white dark:border-slate-900"
+      >
+        {isOpen ? <X className="w-6 h-6" /> : <Zap className="w-6 h-6 fill-current" />}
+      </motion.button>
     </div>
   );
 }
