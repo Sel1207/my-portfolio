@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageSquare, X, Send, Bot, User, Loader2, Zap } from 'lucide-react';
+import { MessageSquare, X, Send, Bot, Loader2 } from 'lucide-react';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 // --- YOUR COMPREHENSIVE DATABASE ---
@@ -77,8 +77,8 @@ export function ChatWidget() {
       try {
         const model = genAI.getGenerativeModel({
           model: modelName,
+          // FIX 1: Removed `role: "system"` which causes 400 errors in some API versions
           systemInstruction: {
-            role: "system",
             parts: [{ text: `
 IDENTITY: Professional AI for Karl Espino.
 
@@ -112,10 +112,14 @@ Tone: precise, minimal, professional.
           }
         });
 
-        const history = messages.slice(-4).filter((_, i) => i !== 0).map(m => ({
-          role: m.role === 'user' ? 'user' : 'model',
-          parts: [{ text: m.text }]
-        }));
+        // FIX 2: Safely extract history. Remove the first greeting, then take an even number of messages.
+        const history = messages
+          .slice(1) 
+          .slice(-4) 
+          .map(m => ({
+            role: m.role === 'user' ? 'user' : 'model',
+            parts: [{ text: m.text }]
+          }));
 
         const chat = model.startChat({ history });
         const result = await chat.sendMessage(userText);
@@ -126,6 +130,7 @@ Tone: precise, minimal, professional.
         return; 
 
       } catch (error: any) {
+        console.error(`[Diagnostics] Model ${modelName} failed:`, error);
         if (modelName === modelPriority[modelPriority.length - 1]) {
           setMessages(prev => [...prev, { role: 'model', text: "Grid maintenance: Quota limit reached. Please try again in 60 seconds." }]);
           setIsLoading(false);
@@ -202,13 +207,14 @@ Tone: precise, minimal, professional.
         )}
       </AnimatePresence>
 
+      {/* FIX 3: Replaced the Zap icon with a clean, minimalistic MessageSquare */}
       <motion.button
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         onClick={() => setIsOpen(!isOpen)}
         className="w-14 h-14 rounded-full bg-sky-500 text-white shadow-xl flex items-center justify-center hover:bg-sky-400 z-50 border-4 border-white dark:border-slate-900"
       >
-        {isOpen ? <X className="w-6 h-6" /> : <Zap className="w-6 h-6 fill-current" />}
+        {isOpen ? <X className="w-6 h-6" /> : <MessageSquare className="w-6 h-6" />}
       </motion.button>
     </div>
   );
