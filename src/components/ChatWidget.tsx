@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageSquare, X, Send, Bot, Loader2 } from 'lucide-react';
+import { MessageSquare, X, Send, Bot } from 'lucide-react'; // Removed Loader2
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 // --- YOUR COMPREHENSIVE DATABASE ---
@@ -200,7 +200,30 @@ Tone: precise, minimal, clarity, conciseness, and professionalism. Emphasis on p
                   </div>
                 </div>
               ))}
-              {isLoading && <Loader2 className="w-4 h-4 animate-spin text-sky-500 self-center" />}
+
+              {/* NEW: Bouncing Wave Typing Indicator */}
+              {isLoading && (
+                <div className="flex gap-3">
+                  <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-tl-none shadow-sm flex items-center gap-1.5 w-fit h-10">
+                    <motion.div
+                      className="w-1.5 h-1.5 bg-slate-400 dark:bg-slate-500 rounded-full"
+                      animate={{ y: [0, -4, 0] }}
+                      transition={{ duration: 0.6, repeat: Infinity, ease: "easeInOut", delay: 0 }}
+                    />
+                    <motion.div
+                      className="w-1.5 h-1.5 bg-slate-400 dark:bg-slate-500 rounded-full"
+                      animate={{ y: [0, -4, 0] }}
+                      transition={{ duration: 0.6, repeat: Infinity, ease: "easeInOut", delay: 0.15 }}
+                    />
+                    <motion.div
+                      className="w-1.5 h-1.5 bg-slate-400 dark:bg-slate-500 rounded-full"
+                      animate={{ y: [0, -4, 0] }}
+                      transition={{ duration: 0.6, repeat: Infinity, ease: "easeInOut", delay: 0.3 }}
+                    />
+                  </div>
+                </div>
+              )}
+              
               <div ref={messagesEndRef} />
             </div>
 
