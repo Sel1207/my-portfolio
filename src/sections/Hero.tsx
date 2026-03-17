@@ -252,11 +252,21 @@ export function Hero() {
                   View Projects <ExternalLink className="ml-2 h-4 w-4" />
                 </Button>
               </Magnetic>
+              
+              {/* UPDATED DOWNLOAD BUTTON */}
               <Magnetic>
-                <Button size="lg" variant="outline" className="rounded-xl px-8 hover:bg-accent-blue/10 transition-colors">
-                  Download CV <Download className="ml-2 h-4 w-4" />
-                </Button>
+                <a 
+                  href="/Karl_Espino_Resume.pdf" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="block"
+                >
+                  <Button size="lg" variant="outline" className="rounded-xl px-8 hover:bg-accent-blue/10 transition-colors w-full">
+                    Download CV <Download className="ml-2 h-4 w-4" />
+                  </Button>
+                </a>
               </Magnetic>
+
             </motion.div>
 
             {/* STATS GRID */}
