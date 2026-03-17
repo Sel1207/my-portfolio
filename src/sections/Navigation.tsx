@@ -110,18 +110,18 @@ export function Navigation() {
         className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between"
       >
         {/* FIXED LOGO - NATIVE LINK BEHAVIOR */}
-        <a 
-          href="/" 
-          className="group flex items-center font-bold text-xl tracking-tight transition-transform duration-300 hover:scale-105"
-          aria-label="Home"
-        >
-          <span className="bg-foreground text-background px-3 py-1.5 rounded-l-lg transition-all">
-            KP
-          </span>
-          <span className="border-2 border-l-0 border-foreground text-foreground px-3 py-1 rounded-r-lg hidden sm:block transition-all">
-            Espino
-          </span>
-        </a>
+<a 
+  href="/" 
+  className="group flex items-center font-bold text-xl tracking-tight transition-transform duration-300 hover:scale-105"
+  aria-label="Home"
+>
+  <span className="bg-foreground text-background px-3 py-1.5 rounded-l-lg transition-all">
+    KP
+  </span>
+  <span className="border-2 border-l-0 border-foreground text-foreground px-3 py-1 rounded-r-lg transition-all">
+    Espino
+  </span>
+</a>
 
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center gap-1">

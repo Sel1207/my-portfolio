@@ -56,11 +56,12 @@ const trainingItems = [
 // --- UPGRADED PROGRESS BAR ---
 function ProgressBar({ level, delay }: { level: number; delay: number }) {
   return (
-    <div className="h-2 bg-secondary rounded-full overflow-hidden">
+    <div className="h-2 w-full bg-secondary rounded-full overflow-hidden mt-2">
       <motion.div
         initial={{ width: 0 }}
         whileInView={{ width: `${level}%` }}
-        viewport={{ once: true, margin: "-50px" }}
+        // Removed the problematic negative margin. This now triggers as soon as it enters the screen!
+        viewport={{ once: true }} 
         transition={{ duration: 1.2, delay: delay, ease: "easeOut" }}
         className="h-full bg-gradient-to-r from-accent-blue to-blue-400 rounded-full"
       />

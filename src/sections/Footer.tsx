@@ -30,7 +30,7 @@ export function Footer() {
             <span className="bg-white text-slate-950 px-3 py-1.5 rounded-l-lg">
               KP
             </span>
-            <span className="border-2 border-l-0 border-white text-white px-3 py-1 rounded-r-lg hidden sm:block">
+            <span className="border-2 border-l-0 border-white text-white px-3 py-1 rounded-r-lg">
               Espino
             </span>
           </div>
