@@ -202,7 +202,8 @@ export function Hero() {
   };
 
   return (
-    <section className="relative min-h-screen flex flex-col justify-center pt-20 pb-16 overflow-hidden bg-background">
+    // FIX APPLIED HERE: pt-32 adds massive breathing room on mobile, md:pt-20 keeps desktop clean.
+    <section className="relative min-h-screen flex flex-col justify-center pt-32 md:pt-20 pb-16 overflow-hidden bg-background">
       {/* Animated Background Blobs */}
       <motion.div 
         animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}

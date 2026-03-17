@@ -18,15 +18,27 @@ export function Navigation() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [activeSection, setActiveSection] = useState('');
+  
+  // --- NEW: Scroll direction state ---
+  const [isVisible, setIsVisible] = useState(true);
+  const lastScrollY = useRef(0);
   const isManualScrolling = useRef(false);
 
-  // 1. Scroll State & Top Reset
+  // 1. Scroll State, Top Reset, & Hide-on-Scroll Logic
   useEffect(() => {
     const handleScroll = () => {
-      const scrollY = window.scrollY;
-      setIsScrolled(scrollY > 20);
+      const currentScrollY = window.scrollY;
+      setIsScrolled(currentScrollY > 20);
       
-      if (scrollY < 100) {
+      // HIDE ON SCROLL DOWN (Mobile only via CSS later)
+      if (currentScrollY > lastScrollY.current && currentScrollY > 50) {
+        setIsVisible(false); // Scrolling down -> Hide
+      } else {
+        setIsVisible(true);  // Scrolling up -> Show
+      }
+      lastScrollY.current = currentScrollY;
+      
+      if (currentScrollY < 100) {
         setActiveSection('');
       }
     };
@@ -98,7 +110,10 @@ export function Navigation() {
 
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-500 ${
+      // --- FIX: Added transform classes to handle the hide/show logic gracefully ---
+      className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-300 ease-in-out ${
+        !isVisible ? '-translate-y-full md:translate-y-0' : 'translate-y-0'
+      } ${
         isScrolled
           ? 'bg-background/80 backdrop-blur-xl shadow-md border-b border-border/50'
           : 'bg-transparent border-b border-transparent'
@@ -110,18 +125,18 @@ export function Navigation() {
         className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between"
       >
         {/* FIXED LOGO - NATIVE LINK BEHAVIOR */}
-<a 
-  href="/" 
-  className="group flex items-center font-bold text-xl tracking-tight transition-transform duration-300 hover:scale-105"
-  aria-label="Home"
->
-  <span className="bg-foreground text-background px-3 py-1.5 rounded-l-lg transition-all">
-    KP
-  </span>
-  <span className="border-2 border-l-0 border-foreground text-foreground px-3 py-1 rounded-r-lg transition-all">
-    Espino
-  </span>
-</a>
+        <a 
+          href="/" 
+          className="group flex items-center font-bold text-xl tracking-tight transition-transform duration-300 hover:scale-105"
+          aria-label="Home"
+        >
+          <span className="bg-foreground text-background px-3 py-1.5 rounded-l-lg transition-all">
+            KP
+          </span>
+          <span className="border-2 border-l-0 border-foreground text-foreground px-3 py-1 rounded-r-lg transition-all">
+            Espino
+          </span>
+        </a>
 
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center gap-1">
