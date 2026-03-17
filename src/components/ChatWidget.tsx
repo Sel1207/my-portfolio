@@ -31,9 +31,9 @@ const KARL_DATABASE = {
     specialization: "Power System Protection (PSP)",
     previous_education: "Mapúa SHS (STEM, Highest Honors), Justino Sevilla JHS (High Honors), San Nicolas ES (Valedictorian)"
   },
-  thesis: {
+  ongoingthesis: {
     title: "Adaptive Power Swing Blocking for Distance Protection in Islanded Microgrids with Virtual Inertia BESS Using IEC 61850-Based Hybrid Architecture",
-    keywords: ["IEC 61850", "BESS", "Virtual Inertia", "Grid Stability"]
+    keywords: ["IEC 61850", "BESS", "Virtual Inertia", "Grid Stability","ongoing thesis","learning"]
   },
   projects: [
     { title: "Data Analytics (March 2026)", desc: "Interactive Looker Studio dashboard for gaming patterns and well-being." },
