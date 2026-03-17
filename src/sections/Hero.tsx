@@ -86,6 +86,31 @@ function Counter({ end, duration = 2 }: { end: number; duration?: number }) {
   return <span ref={ref}>{count}</span>;
 }
 
+// --- ORDINAL SEQUENCE ANIMATION (1st, 2nd, 3rd) ---
+function OrdinalSequence({ sequence, duration = 1.5 }: { sequence: string[]; duration?: number }) {
+  const [index, setIndex] = useState(0);
+  const ref = useRef<HTMLSpanElement>(null);
+  const isInView = useInView(ref, { once: true });
+
+  useEffect(() => {
+    if (isInView) {
+      const stepTime = (duration * 1000) / sequence.length;
+      const timer = setInterval(() => {
+        setIndex((prev) => {
+          if (prev >= sequence.length - 1) {
+            clearInterval(timer);
+            return sequence.length - 1;
+          }
+          return prev + 1;
+        });
+      }, stepTime);
+      return () => clearInterval(timer);
+    }
+  }, [isInView, sequence, duration]);
+
+  return <span ref={ref}>{sequence[index]}</span>;
+}
+
 // --- MAGNETIC WRAPPER COMPONENT ---
 function Magnetic({ children }: { children: ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -132,7 +157,7 @@ const staggerContainer = {
 
 // --- STAT ITEM CONFIGURATION ---
 interface StatItemProps {
-  value: number | string;
+  value: number | string | ReactNode;
   label: string;
   suffix?: string;
   tooltip?: string;
@@ -253,7 +278,7 @@ export function Hero() {
                 </Button>
               </Magnetic>
               
-              {/* UPDATED DOWNLOAD BUTTON */}
+              {/* DOWNLOAD BUTTON */}
               <Magnetic>
                 <a 
                   href="/Karl_Espino_Resume.pdf" 
@@ -272,10 +297,8 @@ export function Hero() {
             {/* STATS GRID */}
             <motion.div variants={staggerContainer} className="grid grid-cols-2 sm:grid-cols-4 gap-6">
               <StatItem 
-                value={3} 
+                value={<OrdinalSequence sequence={['1st', '2nd', '3rd']} />} 
                 label="Year Standing" 
-                suffix="rd" 
-                isCounter={true}
                 tooltip="Calculated based on successfully completed academic units."
               />
               <StatItem 
