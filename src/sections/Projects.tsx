@@ -46,11 +46,14 @@ function TiltCard({ children, onClick, isLowPower, isMinimal }: { children: Reac
       onMouseLeave={() => { x.set(0); y.set(0); }}
       onClick={onClick}
       style={{ rotateY, rotateX, transformStyle: "preserve-3d" }}
-      className={`relative group bg-slate-900 rounded-xl overflow-visible border border-slate-700/50 transition-colors duration-500 cursor-pointer shadow-lg h-full will-change-transform ${isMinimal ? '' : 'hover:border-sky-500/50'}`}
+      // UX FIX: hover:border-sky-500/50 is now permanently active across all modes
+      className="relative group bg-slate-900 rounded-xl overflow-visible border border-slate-700/50 hover:border-sky-500/50 transition-colors duration-500 cursor-pointer shadow-lg h-full will-change-transform"
     >
+      {/* Side connection dots (Glow removed in Minimal mode, but dots remain) */}
       <div className={`absolute top-1/2 -left-1.5 w-3 h-3 rounded-full bg-slate-950 border-2 border-slate-700 transition-all duration-300 z-30 transform -translate-y-1/2 ${isMinimal ? '' : 'group-hover:bg-sky-400 group-hover:border-sky-300 group-hover:shadow-[0_0_12px_#38bdf8]'}`} />
       <div className={`absolute top-1/2 -right-1.5 w-3 h-3 rounded-full bg-slate-950 border-2 border-slate-700 transition-all duration-300 z-30 transform -translate-y-1/2 ${isMinimal ? '' : 'group-hover:bg-sky-400 group-hover:border-sky-300 group-hover:shadow-[0_0_12px_#38bdf8]'}`} />
 
+      {/* Top animated border - Removed completely in Low Power & Minimal Mode */}
       {!isLowPower && !isMinimal && (
         <div className="absolute top-0 left-0 w-full h-1 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left z-20 rounded-t-xl overflow-hidden">
           <motion.div 
@@ -65,6 +68,7 @@ function TiltCard({ children, onClick, isLowPower, isMinimal }: { children: Reac
         </div>
       )}
 
+      {/* Inner card glow - Removed in Minimal & Low Power */}
       <div className="absolute inset-0 rounded-xl overflow-hidden pointer-events-none">
         <div className={`absolute inset-0 bg-gradient-to-br from-sky-500/5 to-blue-500/5 opacity-0 transition-opacity duration-500 z-10 ${isMinimal || isLowPower ? 'hidden' : 'group-hover:opacity-100'}`} />
       </div>
@@ -189,15 +193,22 @@ export function Projects() {
     if (x3 >= 100) x3 -= 200;
     trace3X.set(x3);
 
-    let gP = gradientPos.get() + (40 * m * dSec * gradientDirection.current);
-    if (gP >= 100) {
-      gP = 100 - (gP - 100);
-      gradientDirection.current = -1;
-    } else if (gP <= 0) {
-      gP = Math.abs(gP);
-      gradientDirection.current = 1;
+    // Gradient Math decays to 0 on Minimal mode
+    if (isMinimal) {
+      const currentGPos = gradientPos.get();
+      gradientPos.set(currentGPos + (0 - currentGPos) * 0.1); 
+      gradientDirection.current = 1; 
+    } else {
+      let gP = gradientPos.get() + (40 * m * dSec * gradientDirection.current);
+      if (gP >= 100) {
+        gP = 100 - (gP - 100);
+        gradientDirection.current = -1;
+      } else if (gP <= 0) {
+        gP = Math.abs(gP);
+        gradientDirection.current = 1;
+      }
+      gradientPos.set(gP);
     }
-    gradientPos.set(gP);
   });
 
   const t1 = useTransform(trace1Y, v => `${v}%`);
@@ -222,7 +233,7 @@ export function Projects() {
   return (
     <section id="projects" className="relative py-24 lg:py-32 min-h-screen flex flex-col justify-center bg-slate-950 overflow-hidden text-slate-300">
       <div 
-        className="absolute inset-0 opacity-10 pointer-events-none" 
+        className={`absolute inset-0 pointer-events-none transition-opacity duration-1000 ${isMinimal ? 'opacity-0' : 'opacity-10'}`} 
         style={{ backgroundImage: 'linear-gradient(rgba(148, 163, 184, 0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(148, 163, 184, 0.2) 1px, transparent 1px)', backgroundSize: '40px 40px' }} 
       />
 
@@ -244,7 +255,7 @@ export function Projects() {
               <span className="text-sky-400 text-xs font-bold uppercase tracking-widest relative z-10">My Work</span>
               {!isLowPower && !isMinimal && (
                 <motion.div 
-                  className="absolute top-0 bottom-0 w-full bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12 z-0"
+                  className="absolute top-0 bottom-0 w-[150%] bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12 z-0"
                   animate={{ left: ['-100%', '200%'] }}
                   transition={{ duration: 0.8, repeat: Infinity, repeatDelay: 2.5, ease: "easeInOut" }}
                 />
@@ -257,7 +268,7 @@ export function Projects() {
             style={{ 
               backgroundImage: "linear-gradient(135deg, rgb(14, 165, 233), rgb(59, 130, 246), rgb(139, 92, 246), rgb(14, 165, 233))", 
               backgroundSize: "300% 300%",
-              backgroundPosition: isMinimal ? "0% 50%" : bgPosString
+              backgroundPosition: bgPosString
             }}
           />
         </motion.div>
@@ -265,7 +276,6 @@ export function Projects() {
         {/* --- CAROUSEL WRAPPER --- */}
         <div className="relative mt-12 w-full">
           
-          {/* MOBILE FRIENDLY BUTTONS: Now visible on all screens */}
           <button 
             onClick={prev} 
             className="flex absolute top-1/2 -left-2 lg:-left-12 -translate-y-1/2 w-10 h-10 md:w-12 md:h-12 bg-slate-900/90 border border-slate-700 rounded-full items-center justify-center text-sky-400 z-40 hover:bg-slate-800 active:scale-90 transition-all duration-300 shadow-xl backdrop-blur-sm"
@@ -307,7 +317,8 @@ export function Projects() {
                     {!isHidden && (
                       <TiltCard isLowPower={isLowPower} isMinimal={isMinimal} onClick={() => { if(isVisible) setSelectedProject(project); }}>
                         <div className="relative h-44 overflow-hidden bg-slate-800">
-                          <img src={project.image} alt={project.title} loading="lazy" className={`w-full h-full object-cover opacity-60 transition-all duration-700 ${isMinimal ? '' : 'group-hover:opacity-100 group-hover:scale-110'}`} />
+                          {/* Image scale on hover disabled in Minimal mode, but color transition remains */}
+                          <img src={project.image} alt={project.title} loading="lazy" className={`w-full h-full object-cover opacity-60 transition-all duration-700 group-hover:opacity-100 ${isMinimal ? '' : 'group-hover:scale-110'}`} />
                           <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent" />
                           <Badge className="absolute top-4 right-4 z-20 bg-sky-500/20 text-sky-400 border-sky-500/30 backdrop-blur-md uppercase text-[9px] font-bold">
                             {project.title}
@@ -315,10 +326,12 @@ export function Projects() {
                         </div>
 
                         <div className="p-6 bg-slate-900 flex-grow flex flex-col pointer-events-none">
-                          <div className={`w-10 h-10 bg-slate-800 rounded-lg flex items-center justify-center border border-slate-700 mb-4 shadow-inner transition-colors ${isMinimal ? '' : 'group-hover:bg-sky-500/20'}`}>
+                          {/* UX FIX: Icon background glow on hover is active across all modes */}
+                          <div className="w-10 h-10 bg-slate-800 rounded-lg flex items-center justify-center border border-slate-700 mb-4 shadow-inner transition-colors group-hover:bg-sky-500/20">
                             <project.icon className="w-5 h-5 text-sky-400" />
                           </div>
-                          <h3 className={`text-xl font-bold text-white mb-2 line-clamp-1 transition-colors ${isMinimal ? '' : 'group-hover:text-sky-400'}`}>{project.subtitle}</h3>
+                          {/* UX FIX: Title turns blue on hover across all modes */}
+                          <h3 className="text-xl font-bold text-white mb-2 line-clamp-1 transition-colors group-hover:text-sky-400">{project.subtitle}</h3>
                           <p className="text-xs text-slate-400 leading-relaxed mb-6 line-clamp-3">{project.description}</p>
                           <div className="flex flex-wrap gap-1.5 mb-6">
                             {project.tags.map((tag) => (
@@ -327,6 +340,7 @@ export function Projects() {
                           </div>
                           <div className="flex items-center gap-2 text-sky-400 font-bold text-xs group/btn mt-auto w-fit">
                             Explore Concept 
+                            {/* Minor translation disabled in Minimal */}
                             <ExternalLink className={`w-3.5 h-3.5 transform transition-transform ${isMinimal ? '' : 'group-hover/btn:translate-x-1 group-hover/btn:-translate-y-0.5'}`} />
                           </div>
                         </div>
