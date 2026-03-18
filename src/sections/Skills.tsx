@@ -1,4 +1,6 @@
 import { motion } from 'framer-motion';
+// 1. Connect to the global performance engine
+import { usePerformance } from '@/context/PerformanceContext'; 
 import { 
   Lightbulb, 
   Layers,
@@ -53,11 +55,10 @@ const trainingItems = [
   { name: 'Control Systems Design', issuer: 'Mapúa University', status: 'In Progress', icon: Sliders },
 ];
 
-// --- UPGRADED PROGRESS BAR WITH MOTION GRADIENT ---
-function ProgressBar({ level, delay }: { level: number; delay: number }) {
+// --- UPGRADED PROGRESS BAR WITH PERFORMANCE LOGIC ---
+function ProgressBar({ level, delay, isLowPower }: { level: number; delay: number; isLowPower: boolean }) {
   return (
     <div className="h-2.5 w-full bg-secondary/50 dark:bg-slate-800/50 rounded-full overflow-hidden mt-2 shadow-inner">
-      {/* Outer div controls the width growing once */}
       <motion.div
         initial={{ width: 0 }}
         whileInView={{ width: `${level}%` }}
@@ -65,10 +66,10 @@ function ProgressBar({ level, delay }: { level: number; delay: number }) {
         transition={{ duration: 1.2, delay: delay, ease: "easeOut" }}
         className="h-full rounded-full relative overflow-hidden shadow-[0_0_10px_rgba(59,130,246,0.3)]"
       >
-        {/* Inner div controls the endless gradient color shift */}
+        {/* INNER GRADIENT: Freeze position if Performance Mode is on */}
         <motion.div
           className="absolute inset-0 rounded-full w-full h-full"
-          animate={{ backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"] }}
+          animate={isLowPower ? {} : { backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"] }}
           transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
           style={{
             backgroundImage: "linear-gradient(135deg, rgb(14, 165, 233), rgb(59, 130, 246), rgb(139, 92, 246), rgb(14, 165, 233))",
@@ -81,11 +82,13 @@ function ProgressBar({ level, delay }: { level: number; delay: number }) {
 }
 
 export function Skills() {
+  // 2. Destructure global state
+  const { isLowPower } = usePerformance();
+
   return (
     <section id="skills" className="py-24 lg:py-32 relative bg-background overflow-hidden transition-colors duration-300">
       
-      {/* --- CONTINUOUS CIRCUIT BOARD BACKGROUND EFFECTS --- */}
-      {/* Subtle Grid Pattern (Adapts to Light/Dark Mode) */}
+      {/* Subtle Grid Pattern */}
       <div 
         className="absolute inset-0 opacity-[0.03] dark:opacity-10 pointer-events-none transition-opacity" 
         style={{ 
@@ -94,24 +97,28 @@ export function Skills() {
         }} 
       />
 
-      {/* Ambient Background Lighting */}
-      <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-accent-blue/5 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-purple-500/5 rounded-full blur-[100px] pointer-events-none" />
+      {/* BACKGROUND GLOWS: Hide entirely in Performance Mode */}
+      {!isLowPower && (
+        <>
+          <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-accent-blue/5 rounded-full blur-[120px] pointer-events-none" />
+          <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-purple-500/5 rounded-full blur-[100px] pointer-events-none" />
+        </>
+      )}
 
-      {/* Animated "Current" Traces (Connected perfectly to the Projects section layout) */}
+      {/* CIRCUIT TRACES: Stop loop if Performance Mode is on */}
       <motion.div 
-        className="absolute top-0 left-[20%] w-[1px] h-full bg-gradient-to-b from-transparent via-sky-500/30 dark:via-sky-400/80 to-transparent shadow-[0_0_10px_rgba(56,189,248,0.2)] dark:shadow-[0_0_10px_#38bdf8]"
-        animate={{ y: ['-100%', '100%'] }}
+        className="absolute top-0 left-[20%] w-[1px] h-full bg-gradient-to-b from-transparent via-sky-500/30 dark:via-sky-400/80 to-transparent"
+        animate={isLowPower ? {} : { y: ['-100%', '100%'] }}
         transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
       />
       <motion.div 
-        className="absolute top-0 right-[25%] w-[1px] h-full bg-gradient-to-b from-transparent via-blue-500/30 dark:via-blue-500/80 to-transparent shadow-[0_0_10px_rgba(59,130,246,0.2)] dark:shadow-[0_0_10px_#3b82f6]"
-        animate={{ y: ['-100%', '100%'] }}
+        className="absolute top-0 right-[25%] w-[1px] h-full bg-gradient-to-b from-transparent via-blue-500/30 dark:via-blue-500/80 to-transparent"
+        animate={isLowPower ? {} : { y: ['-100%', '100%'] }}
         transition={{ duration: 6, repeat: Infinity, ease: "linear", delay: 2 }}
       />
       <motion.div 
-        className="absolute top-[30%] left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-sky-500/20 dark:via-sky-400/50 to-transparent shadow-[0_0_10px_rgba(56,189,248,0.2)] dark:shadow-[0_0_10px_#38bdf8]"
-        animate={{ x: ['-100%', '100%'] }}
+        className="absolute top-[30%] left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-sky-500/20 dark:via-sky-400/50 to-transparent"
+        animate={isLowPower ? {} : { x: ['-100%', '100%'] }}
         transition={{ duration: 7, repeat: Infinity, ease: "linear", delay: 1 }}
       />
 
@@ -125,16 +132,13 @@ export function Skills() {
           className="text-center max-w-2xl mx-auto mb-16"
         >
           {/* Shimmer Badge */}
-          <motion.div 
-            whileHover={{ scale: 1.05 }} 
-            className="inline-block mb-4 cursor-default"
-          >
+          <motion.div whileHover={{ scale: 1.05 }} className="inline-block mb-4 cursor-default">
             <div className="relative overflow-hidden inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-sky-500/10 dark:bg-accent-blue/10 border border-sky-500/20 dark:border-accent-blue/20">
-              <span className="w-2 h-2 rounded-full bg-sky-500 dark:bg-accent-blue animate-pulse relative z-10" />
+              <span className={`w-2 h-2 rounded-full bg-sky-500 dark:bg-accent-blue relative z-10 ${isLowPower ? '' : 'animate-pulse'}`} />
               <span className="text-sky-600 dark:text-accent-blue text-xs font-bold uppercase tracking-widest relative z-10">My Expertise</span>
               <motion.div 
                 className="absolute top-0 bottom-0 w-1/2 bg-gradient-to-r from-transparent via-sky-300/40 dark:via-white/20 to-transparent -skew-x-12 z-0"
-                animate={{ left: ['-100%', '200%'] }}
+                animate={isLowPower ? {} : { left: ['-100%', '200%'] }}
                 transition={{ duration: 1.5, repeat: Infinity, repeatDelay: 3.5, ease: "easeInOut" }}
               />
             </div>
@@ -144,7 +148,7 @@ export function Skills() {
             Skills &{' '}
             <motion.span 
               className="inline-block"
-              animate={{ backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"] }}
+              animate={isLowPower ? {} : { backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"] }}
               transition={{ duration: 4, ease: "easeInOut", repeat: Infinity }}
               style={{
                 backgroundImage: "linear-gradient(135deg, rgb(14, 165, 233), rgb(59, 130, 246), rgb(139, 92, 246), rgb(14, 165, 233))",
@@ -174,7 +178,6 @@ export function Skills() {
               transition={{ delay: categoryIndex * 0.1 }}
             >
               <SpotlightCard className="p-6 lg:p-8 h-full border border-border/50 hover:border-accent-blue/30 transition-colors group">
-                {/* Category Header */}
                 <div className="flex items-center gap-4 mb-8">
                   <div className="w-12 h-12 rounded-xl bg-accent-blue/10 flex items-center justify-center group-hover:bg-accent-blue/20 transition-colors">
                     <category.icon className="h-6 w-6 text-accent-blue" />
@@ -182,7 +185,6 @@ export function Skills() {
                   <h3 className="text-xl font-bold text-foreground tracking-tight">{category.title}</h3>
                 </div>
 
-                {/* Skills List */}
                 <div className="space-y-6">
                   {category.skills.map((skill, skillIndex) => (
                     <div key={skill.name} className="group/skill">
@@ -193,6 +195,7 @@ export function Skills() {
                       <ProgressBar
                         level={skill.level}
                         delay={0.2 + (skillIndex * 0.1)} 
+                        isLowPower={isLowPower}
                       />
                     </div>
                   ))}
@@ -221,7 +224,7 @@ export function Skills() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.1 }}
-                whileHover={{ y: -5 }}
+                whileHover={isLowPower ? {} : { y: -5 }}
               >
                 <SpotlightCard className="p-5 h-full flex flex-col border border-border/50 hover:border-accent-blue/30 transition-all group">
                   <div className="flex items-start justify-between mb-5">

@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
+// 1. Connect to the global performance engine
+import { usePerformance } from '@/context/PerformanceContext'; 
 import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
@@ -20,18 +22,20 @@ import {
 } from 'lucide-react';
 
 // --- 3D TILT CARD WRAPPER ---
-function TiltCard({ children, onClick }: { children: React.ReactNode; onClick: () => void }) {
+// Added isLowPower prop to freeze 3D rotation logic
+function TiltCard({ children, onClick, isLowPower }: { children: React.ReactNode; onClick: () => void; isLowPower: boolean }) {
   const x = useMotionValue(0);
   const y = useMotionValue(0);
   const mouseXSpring = useSpring(x);
   const mouseYSpring = useSpring(y);
-  const rotateX = useTransform(mouseYSpring, [-0.5, 0.5], ["7deg", "-7deg"]);
-  const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], ["-7deg", "7deg"]);
+  
+  // Disable rotation if performance mode is active
+  const rotateX = useTransform(mouseYSpring, [-0.5, 0.5], isLowPower ? ["0deg", "0deg"] : ["7deg", "-7deg"]);
+  const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], isLowPower ? ["0deg", "0deg"] : ["-7deg", "7deg"]);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    // Disable tilt on touch devices to prevent layout jumping during swipe
-    if (window.matchMedia("(pointer: coarse)").matches) return;
-    
+    // If performance mode is on, don't waste CPU on mouse tracking
+    if (isLowPower) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const xPct = (e.clientX - rect.left) / rect.width - 0.5;
     const yPct = (e.clientY - rect.top) / rect.height - 0.5;
@@ -45,15 +49,17 @@ function TiltCard({ children, onClick }: { children: React.ReactNode; onClick: (
       onMouseLeave={() => { x.set(0); y.set(0); }}
       onClick={onClick}
       style={{ rotateY, rotateX, transformStyle: "preserve-3d" }}
-      className="relative group bg-slate-900 rounded-xl overflow-visible border border-slate-700/50 hover:border-sky-500/50 transition-colors duration-500 cursor-pointer shadow-lg h-full"
+      className={`relative group bg-slate-900 rounded-xl overflow-visible border border-slate-700/50 hover:border-sky-500/50 transition-colors duration-500 cursor-pointer shadow-lg h-full ${isLowPower ? '' : 'will-change-transform'}`}
     >
+      {/* CIRCUIT NODE PINS */}
       <div className="absolute top-1/2 -left-1.5 w-3 h-3 rounded-full bg-slate-950 border-2 border-slate-700 group-hover:bg-sky-400 group-hover:border-sky-300 group-hover:shadow-[0_0_12px_#38bdf8] transition-all duration-300 z-30 transform -translate-y-1/2" />
       <div className="absolute top-1/2 -right-1.5 w-3 h-3 rounded-full bg-slate-950 border-2 border-slate-700 group-hover:bg-sky-400 group-hover:border-sky-300 group-hover:shadow-[0_0_12px_#38bdf8] transition-all duration-300 z-30 transform -translate-y-1/2" />
 
+      {/* Top animated border - Logic: Freeze animation if isLowPower is true */}
       <div className="absolute top-0 left-0 w-full h-1 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left z-20 rounded-t-xl overflow-hidden">
         <motion.div 
           className="w-full h-full"
-          animate={{ backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"] }}
+          animate={isLowPower ? {} : { backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"] }}
           transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
           style={{
             backgroundImage: "linear-gradient(135deg, rgb(14, 165, 233), rgb(59, 130, 246), rgb(139, 92, 246), rgb(14, 165, 233))",
@@ -66,32 +72,105 @@ function TiltCard({ children, onClick }: { children: React.ReactNode; onClick: (
         <div className="absolute inset-0 bg-gradient-to-br from-sky-500/5 to-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-10" />
       </div>
 
-      <div style={{ transform: "translateZ(30px)" }} className="relative z-20 h-full flex flex-col rounded-xl overflow-hidden">
+      <div style={{ transform: isLowPower ? "none" : "translateZ(30px)" }} className="relative z-20 h-full flex flex-col rounded-xl overflow-hidden">
         {children}
       </div>
     </motion.div>
   );
 }
 
-const initialProjects = [
-  { id: 'lighting', title: 'Illumination Eng.', subtitle: 'Residential Lighting Design', description: 'Designed a comprehensive 3D lighting simulation and architectural model for a residential property.', fullDescription: 'Developed a complete residential lighting design for EEA112P-4 (Illumination Engineering Design). This project involved 3D house modeling, precise lux level calculations, and ensuring modern lighting standards were met for residential comfort and energy efficiency.', image: '/project-lighting.jpg', tags: ['2T2526', 'DIALux evo', '3D Modeling'], icon: Lightbulb, features: ['Complete 3D house modeling', 'Lux calculation & optimization', 'Energy-efficient fixture selection'], technologies: ['DIALux evo', 'AutoCAD', 'Lighting Standards'] },
-  { id: 'transformer', title: 'AC Apparatus', subtitle: 'Transformer Winding Construction', description: 'Practical design and physical construction of transformer windings, analyzing magnetic flux and voltage regulation.', fullDescription: 'Executed for the AC Apparatus and Devices Laboratory (EEA107L-4). The project required designing, winding, and testing a physical transformer. It involved calculating turn ratios, wire gauges, and evaluating core losses to achieve targeted voltage transformation.', image: '/project-transformer.jpg', tags: ['3T2425', 'Power Systems', 'Hardware'], icon: Zap, features: ['Turn ratio calculations', 'Magnetic core loss evaluation', 'Hands-on coil winding'], technologies: ['Copper Winding', 'Multimeters', 'AC Power Supplies'] },
-  { id: 'plc', title: 'Industrial Electronics', subtitle: 'PLC Traffic Control System', description: 'Implemented a PLC-based two-way traffic light control system featuring integrated start and reset fail-safes.', fullDescription: 'Developed during the Industrial Electronics Laboratory (ECEA103-1L). This project focused on industrial automation, requiring the programming of a Programmable Logic Controller (PLC) to manage a synchronized two-way traffic light system with built-in fail-safes and manual override states.', image: '/project-plc.jpg', tags: ['3T2425', 'Automation', 'PLC'], icon: Cpu, features: ['Ladder logic programming', 'Start/Reset fail-safe states', 'Synchronized timing loops'], technologies: ['Omron PLC', 'Ladder Logic', 'Relay Contactors'] },
-  { id: 'garbage-monitor', title: 'Logic Circuits', subtitle: 'Smart Garbage Monitor', description: 'Built a digital logic monitoring system utilizing 7-segment displays and noise alerts for real-time waste level tracking.', fullDescription: 'Created for Logic Circuits and Switching Theory Laboratory (CPE107-42L). The system uses combinational and sequential logic gates to monitor fill levels. Outputs are routed to a 7-segment display for visual tracking and an audio alert mechanism when maximum capacity is reached.', image: '/project-garbage.jpg', tags: ['2T2425', 'Digital Logic', 'Hardware'], icon: CircuitBoard, features: ['Combinational logic design', '7-segment display integration', 'Audible alert triggering'], technologies: ['Logic Gates (TTL/CMOS)', 'Breadboarding', 'Sensors'] },
-  { id: 'data-analysis', title: 'Data Analysis', subtitle: 'BJT Gain Optimization', description: 'Conducted a data-driven analysis of Common-Emitter amplifiers using LTSpice, linear regression, and ANOVA.', fullDescription: 'An interdisciplinary project for Engineering Data Analysis (MATH142-02). Generated extensive dataset samples via LTSpice simulations of a Common-Emitter BJT amplifier. Applied linear regression and Analysis of Variance (ANOVA) to determine the statistical significance of various resistor values on voltage gain.', image: '/project-data.jpg', tags: ['1T2425', 'LTSpice', 'Data Science'], icon: LineChart, features: ['LTSpice batch simulation', 'Linear regression modeling', 'ANOVA statistical testing'], technologies: ['LTSpice', 'Python/Pandas', 'Statistical Analysis'] },
-  { id: 'bjt-speaker', title: 'Electronics I', subtitle: 'BJT Amplifier Speaker', description: 'Designed and constructed a functional audio speaker driven by a custom-built BJT amplifier circuit.', fullDescription: 'A hardware capstone for Electronics 1 Laboratory (ECEA101L-4) titled "Amplifying Knowledge". Designed a BJT-based audio amplifier from scratch, performing DC biasing and AC small-signal analysis to successfully drive a physical speaker with minimal distortion.', image: '/project-speaker.jpg', tags: ['1T2425', 'Audio Amp', 'Circuit Design'], icon: Volume2, features: ['DC biasing & AC analysis', 'Impedance matching', 'Hardware soldering & testing'], technologies: ['BJT Transistors', 'Oscilloscopes', 'Function Generators'] },
+// --- PROJECT DATA ---
+const projects = [
+  {
+    id: 'lighting',
+    title: 'Illumination Eng.',
+    subtitle: 'Residential Lighting Design',
+    description: 'Designed a comprehensive 3D lighting simulation and architectural model for a residential property.',
+    fullDescription: 'Developed a complete residential lighting design for EEA112P-4 (Illumination Engineering Design). This project involved 3D house modeling, precise lux level calculations, and ensuring modern lighting standards were met for residential comfort and energy efficiency.',
+    image: '/project-lighting.jpg',
+    tags: ['2T2526', 'DIALux evo', '3D Modeling'],
+    icon: Lightbulb,
+    features: ['Complete 3D house modeling', 'Lux calculation & optimization', 'Energy-efficient fixture selection'],
+    technologies: ['DIALux evo', 'AutoCAD', 'Lighting Standards'],
+  },
+  {
+    id: 'transformer',
+    title: 'AC Apparatus',
+    subtitle: 'Transformer Winding Construction',
+    description: 'Practical design and physical construction of transformer windings, analyzing magnetic flux and voltage regulation.',
+    fullDescription: 'Executed for the AC Apparatus and Devices Laboratory (EEA107L-4). The project required designing, winding, and testing a physical transformer. It involved calculating turn ratios, wire gauges, and evaluating core losses to achieve targeted voltage transformation.',
+    image: '/project-transformer.jpg',
+    tags: ['3T2425', 'Power Systems', 'Hardware'],
+    icon: Zap,
+    features: ['Turn ratio calculations', 'Magnetic core loss evaluation', 'Hands-on coil winding'],
+    technologies: ['Copper Winding', 'Multimeters', 'AC Power Supplies'],
+  },
+  {
+    id: 'plc',
+    title: 'Industrial Electronics',
+    subtitle: 'PLC Traffic Control System',
+    description: 'Implemented a PLC-based two-way traffic light control system featuring integrated start and reset fail-safes.',
+    fullDescription: 'Developed during the Industrial Electronics Laboratory (ECEA103-1L). This project focused on industrial automation, requiring the programming of a Programmable Logic Controller (PLC) to manage a synchronized two-way traffic light system with built-in fail-safes and manual override states.',
+    image: '/project-plc.jpg',
+    tags: ['3T2425', 'Automation', 'PLC'],
+    icon: Cpu,
+    features: ['Ladder logic programming', 'Start/Reset fail-safe states', 'Synchronized timing loops'],
+    technologies: ['Omron PLC', 'Ladder Logic', 'Relay Contactors'],
+  },
+  {
+    id: 'garbage-monitor',
+    title: 'Logic Circuits',
+    subtitle: 'Smart Garbage Monitor',
+    description: 'Built a digital logic monitoring system utilizing 7-segment displays and noise alerts for real-time waste level tracking.',
+    fullDescription: 'Created for Logic Circuits and Switching Theory Laboratory (CPE107-42L). The system uses combinational and sequential logic gates to monitor fill levels. Outputs are routed to a 7-segment display for visual tracking and an audio alert mechanism when maximum capacity is reached.',
+    image: '/project-garbage.jpg',
+    tags: ['2T2425', 'Digital Logic', 'Hardware'],
+    icon: CircuitBoard,
+    features: ['Combinational logic design', '7-segment display integration', 'Audible alert triggering'],
+    technologies: ['Logic Gates (TTL/CMOS)', 'Breadboarding', 'Sensors'],
+  },
+  {
+    id: 'data-analysis',
+    title: 'Data Analysis',
+    subtitle: 'BJT Gain Optimization',
+    description: 'Conducted a data-driven analysis of Common-Emitter amplifiers using LTSpice, linear regression, and ANOVA.',
+    fullDescription: 'An interdisciplinary project for Engineering Data Analysis (MATH142-02). Generated extensive dataset samples via LTSpice simulations of a Common-Emitter BJT amplifier. Applied linear regression and Analysis of Variance (ANOVA) to determine the statistical significance of various resistor values on voltage gain.',
+    image: '/project-data.jpg',
+    tags: ['1T2425', 'LTSpice', 'Data Science'],
+    icon: LineChart,
+    features: ['LTSpice batch simulation', 'Linear regression modeling', 'ANOVA statistical testing'],
+    technologies: ['LTSpice', 'Python/Pandas', 'Statistical Analysis'],
+  },
+  {
+    id: 'bjt-speaker',
+    title: 'Electronics I',
+    subtitle: 'BJT Amplifier Speaker',
+    description: 'Designed and constructed a functional audio speaker driven by a custom-built BJT amplifier circuit.',
+    fullDescription: 'A hardware capstone for Electronics 1 Laboratory (ECEA101L-4) titled "Amplifying Knowledge". Designed a BJT-based audio amplifier from scratch, performing DC biasing and AC small-signal analysis to successfully drive a physical speaker with minimal distortion.',
+    image: '/project-speaker.jpg',
+    tags: ['1T2425', 'Audio Amp', 'Circuit Design'],
+    icon: Volume2,
+    features: ['DC biasing & AC analysis', 'Impedance matching', 'Hardware soldering & testing'],
+    technologies: ['BJT Transistors', 'Oscilloscopes', 'Function Generators'],
+  },
 ];
 
-const INFINITE_PROJECTS = [...initialProjects, ...initialProjects, ...initialProjects, ...initialProjects, ...initialProjects];
+const INFINITE_PROJECTS = [
+  ...projects, ...projects, ...projects, ...projects, ...projects, ...projects,
+  ...projects, ...projects, ...projects, ...projects, ...projects
+];
 
 export function Projects() {
-  const [selectedProject, setSelectedProject] = useState<typeof initialProjects[0] | null>(null);
+  const [selectedProject, setSelectedProject] = useState<typeof projects[0] | null>(null);
   const [itemsPerPage, setItemsPerPage] = useState(3);
-  const [startIndex, setStartIndex] = useState(12);
+  const [startIndex, setStartIndex] = useState(30);
+
+  // 2. Destructure the global performance state
+  const { isLowPower } = usePerformance(); 
 
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth < 640) setItemsPerPage(1); // Exactly 1 project on mobile
+      if (window.innerWidth < 768) setItemsPerPage(1);
       else if (window.innerWidth < 1024) setItemsPerPage(2);
       else setItemsPerPage(3);
     };
@@ -105,80 +184,146 @@ export function Projects() {
 
   return (
     <section id="projects" className="relative py-24 lg:py-32 min-h-screen flex flex-col justify-center bg-slate-950 overflow-hidden text-slate-300">
-      {/* Background and Circuit Effects remain same */}
-      <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'linear-gradient(rgba(148, 163, 184, 0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(148, 163, 184, 0.2) 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-sky-500/10 rounded-full blur-[150px] pointer-events-none" />
+      
+      {/* --- CIRCUIT BOARD BACKGROUND EFFECTS --- */}
+      <div 
+        className="absolute inset-0 opacity-10 pointer-events-none" 
+        style={{ 
+          backgroundImage: 'linear-gradient(rgba(148, 163, 184, 0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(148, 163, 184, 0.2) 1px, transparent 1px)', 
+          backgroundSize: '40px 40px' 
+        }} 
+      />
+      
+      {/* Background radial glow - disabled if isLowPower is true */}
+      {!isLowPower && (
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-sky-500/10 rounded-full blur-[150px] pointer-events-none" />
+      )}
 
-      <div className="relative max-w-full mx-auto px-4 z-10 overflow-visible">
-        <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center max-w-2xl mx-auto mb-16 px-4">
-          <div className="relative overflow-hidden inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-sky-500/10 border border-sky-500/20 mb-4">
-            <span className="w-2 h-2 rounded-full bg-sky-500 animate-pulse" />
-            <span className="text-sky-400 text-xs font-bold uppercase tracking-widest">My Work</span>
-          </div>
+      {/* Circuit Traces - Stop animation loop if isLowPower is true */}
+      <motion.div 
+        className="absolute top-0 left-[20%] w-[1px] h-full bg-gradient-to-b from-transparent via-sky-400/80 to-transparent shadow-[0_0_10px_#38bdf8]"
+        animate={isLowPower ? {} : { y: ['-100%', '100%'] }}
+        transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+      />
+      <motion.div 
+        className="absolute top-0 right-[25%] w-[1px] h-full bg-gradient-to-b from-transparent via-blue-500/80 to-transparent shadow-[0_0_10px_#3b82f6]"
+        animate={isLowPower ? {} : { y: ['-100%', '100%'] }}
+        transition={{ duration: 6, repeat: Infinity, ease: "linear", delay: 2 }}
+      />
+      <motion.div 
+        className="absolute top-[30%] left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-sky-400/50 to-transparent shadow-[0_0_10px_#38bdf8]"
+        animate={isLowPower ? {} : { x: ['-100%', '100%'] }}
+        transition={{ duration: 7, repeat: Infinity, ease: "linear", delay: 1 }}
+      />
+
+      <div className="relative max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 z-10">
+        
+        {/* Section Header */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="text-center max-w-2xl mx-auto mb-16"
+        >
+          <motion.div whileHover={{ scale: 1.05 }} className="inline-block mb-4 cursor-default">
+            <div className="relative overflow-hidden inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-sky-500/10 border border-sky-500/20">
+              <span className={`w-2 h-2 rounded-full bg-sky-500 relative z-10 ${isLowPower ? '' : 'animate-pulse'}`} />
+              <span className="text-sky-400 text-xs font-bold uppercase tracking-widest relative z-10">My Work</span>
+              <motion.div 
+                className="absolute top-0 bottom-0 w-1/2 bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-12 z-0"
+                animate={isLowPower ? {} : { left: ['-100%', '200%'] }}
+                transition={{ duration: 1.5, repeat: Infinity, repeatDelay: 3.5, ease: "easeInOut" }}
+              />
+            </div>
+          </motion.div>
+
           <h2 className="text-4xl md:text-5xl font-bold text-white tracking-tight mb-6">Selected Projects</h2>
-          <div className="w-20 h-1.5 bg-sky-500 rounded-full mx-auto" />
+          
+          <motion.div 
+            className="w-20 h-1.5 rounded-full mx-auto"
+            animate={isLowPower ? {} : { backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"] }}
+            transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+            style={{
+              backgroundImage: "linear-gradient(135deg, rgb(14, 165, 233), rgb(59, 130, 246), rgb(139, 92, 246), rgb(14, 165, 233))",
+              backgroundSize: "300% 300%",
+            }}
+          />
         </motion.div>
 
-        <div className="relative w-full max-w-[1400px] mx-auto group/carousel">
-          {/* Desktop Nav Buttons */}
-          <button onClick={prev} className="hidden md:flex absolute top-1/2 -left-12 -translate-y-1/2 w-12 h-12 bg-slate-900 border border-slate-700 rounded-full items-center justify-center text-sky-400 z-40 hover:bg-slate-800 active:scale-90 transition-all shadow-xl">
+        {/* --- CAROUSEL WRAPPER --- */}
+        <div className="relative mt-12 w-full">
+          
+          <button
+            onClick={prev}
+            className="absolute top-1/2 -left-2 md:-left-6 lg:-left-12 -translate-y-1/2 w-12 h-12 bg-slate-900 border border-slate-700 rounded-full flex items-center justify-center text-sky-400 z-40 hover:bg-slate-800 active:scale-90 transition-all duration-300 shadow-[0_0_15px_rgba(0,0,0,0.5)]"
+          >
             <ChevronLeft className="w-6 h-6" />
           </button>
-          <button onClick={next} className="hidden md:flex absolute top-1/2 -right-12 -translate-y-1/2 w-12 h-12 bg-slate-900 border border-slate-700 rounded-full items-center justify-center text-sky-400 z-40 hover:bg-slate-800 active:scale-90 transition-all shadow-xl">
+          
+          <button
+            onClick={next}
+            className="absolute top-1/2 -right-2 md:-right-6 lg:-right-12 -translate-y-1/2 w-12 h-12 bg-slate-900 border border-slate-700 rounded-full flex items-center justify-center text-sky-400 z-40 hover:bg-slate-800 active:scale-90 transition-all duration-300 shadow-[0_0_15px_rgba(0,0,0,0.5)]"
+          >
             <ChevronRight className="w-6 h-6" />
           </button>
 
-          {/* THE SWIPEABLE TRACK */}
-          <div className="overflow-visible w-full touch-pan-y">
+          <div className="overflow-visible w-full">
             <motion.div 
-              className="flex items-stretch cursor-grab active:cursor-grabbing"
-              drag="x"
-              dragConstraints={{ left: 0, right: 0 }}
-              onDragEnd={(_, info) => {
-                // Swipe threshold of 50px for snappier feel on mobile
-                if (info.offset.x < -50) next();
-                if (info.offset.x > 50) prev();
-              }}
-              // On mobile, animate directly to the 100% offset of the current index
+              className="flex items-stretch"
               animate={{ x: `-${startIndex * (100 / itemsPerPage)}%` }}
-              transition={{ type: "spring", stiffness: 250, damping: 30 }}
+              // Swap spring for faster, lighter tween if Performance Mode is on
+              transition={isLowPower ? { duration: 0.3 } : { type: "spring", stiffness: 250, damping: 30 }}
             >
               {INFINITE_PROJECTS.map((project, index) => {
-                const isVisible = index >= startIndex && index < startIndex + Math.floor(itemsPerPage);
-                // On mobile, "isEdge" projects are the ones immediately left and right of center
-                const isEdge = index === startIndex - 1 || index === startIndex + Math.ceil(itemsPerPage);
+                const isVisible = index >= startIndex && index < startIndex + itemsPerPage;
+                const isEdge = index === startIndex - 1 || index === startIndex + itemsPerPage;
                 
                 return (
                   <motion.div
                     key={`${project.id}-${index}`}
-                    className="flex-shrink-0 px-3 md:px-4 py-4"
-                    style={{ width: `${100 / itemsPerPage}%` }}
+                    className="w-full md:w-1/2 lg:w-1/3 flex-shrink-0 px-3 md:px-4 py-4"
                     animate={{
-                      opacity: isVisible ? 1 : (isEdge ? 0.4 : 0),
-                      filter: isVisible ? 'blur(0px)' : 'blur(8px)',
-                      scale: isVisible ? 1 : 0.9,
+                      opacity: isVisible ? 1 : (isEdge ? 0.3 : 0),
+                      // Remove expensive blurs instantly in Performance Mode
+                      filter: isLowPower ? 'none' : (isVisible ? 'blur(0px)' : (isEdge ? 'blur(6px)' : 'blur(10px)')),
+                      scale: isVisible ? 1 : 0.85,
+                      pointerEvents: isVisible ? 'auto' : 'none',
                     }}
+                    transition={{ duration: 0.5, ease: "easeInOut" }}
                   >
-                    <TiltCard onClick={() => { if(isVisible) setSelectedProject(project); }}>
+                    <TiltCard isLowPower={isLowPower} onClick={() => { if(isVisible) setSelectedProject(project); }}>
                       <div className="relative h-44 overflow-hidden bg-slate-800">
-                        <img src={project.image} alt={project.title} className="w-full h-full object-cover opacity-60" />
-                        <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/20 to-transparent" />
-                        <Badge className="absolute top-4 right-4 z-20 bg-sky-500/20 text-sky-400 border-sky-500/30 text-[9px] font-bold uppercase">{project.title}</Badge>
+                        <img src={project.image} alt={project.title} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 group-hover:scale-110 transition-all duration-700" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent" />
+                        <Badge className="absolute top-4 right-4 z-20 bg-sky-500/20 text-sky-400 border-sky-500/30 backdrop-blur-md uppercase text-[9px] font-bold">
+                          {project.title}
+                        </Badge>
                       </div>
 
                       <div className="p-6 bg-slate-900 flex-grow flex flex-col">
-                        <div className="w-10 h-10 bg-slate-800 rounded-lg flex items-center justify-center mb-4 border border-slate-700 group-hover:bg-sky-500/20 transition-colors">
+                        <div className="w-10 h-10 bg-slate-800 rounded-lg flex items-center justify-center border border-slate-700 group-hover:bg-sky-500/20 group-hover:border-sky-500/30 transition-colors mb-4 shadow-inner">
                           <project.icon className="w-5 h-5 text-sky-400" />
                         </div>
-                        <h3 className="text-xl font-bold text-white mb-2 line-clamp-1">{project.subtitle}</h3>
-                        <p className="text-xs text-slate-400 leading-relaxed mb-6 line-clamp-3">{project.description}</p>
+                        
+                        <h3 className="text-xl font-bold text-white mb-2 group-hover:text-sky-400 transition-colors line-clamp-1">
+                          {project.subtitle}
+                        </h3>
+                        
+                        <p className="text-xs text-slate-400 leading-relaxed mb-6 line-clamp-3">
+                          {project.description}
+                        </p>
+                        
                         <div className="flex flex-wrap gap-1.5 mb-6">
                           {project.tags.map((tag) => (
-                            <span key={tag} className="px-2 py-0.5 bg-slate-800 text-slate-400 text-[9px] uppercase font-bold rounded border border-slate-700">{tag}</span>
+                            <span key={tag} className="px-2 py-0.5 bg-slate-800 text-slate-400 text-[9px] uppercase font-bold tracking-wider rounded border border-slate-700">
+                              {tag}
+                            </span>
                           ))}
                         </div>
-                        <div className="flex items-center gap-2 text-sky-400 font-bold text-xs mt-auto">
-                          Explore Concept <ExternalLink className="w-3.5 h-3.5" />
+
+                        <div className="flex items-center gap-2 text-sky-400 font-bold text-xs group/btn mt-auto w-fit">
+                          Explore Concept
+                          <ExternalLink className="w-3.5 h-3.5 transform group-hover/btn:translate-x-1 group-hover/btn:-translate-y-0.5 transition-transform" />
                         </div>
                       </div>
                     </TiltCard>
@@ -190,43 +335,49 @@ export function Projects() {
         </div>
       </div>
 
-      {/* Modal remains unchanged */}
+      {/* --- MODAL (Strictly Dark Mode) --- */}
       <Dialog open={!!selectedProject} onOpenChange={() => setSelectedProject(null)}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-slate-900 border-slate-700 text-white shadow-2xl">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-slate-900 border-slate-700 text-white shadow-[0_0_50px_rgba(0,0,0,0.5)]">
           {selectedProject && (
-            <div className="animate-in fade-in zoom-in duration-300 p-0">
+            <div className="animate-in fade-in zoom-in duration-300">
               <div className="relative h-64 -mx-6 -mt-6 mb-6 overflow-hidden bg-slate-800">
                 <img src={selectedProject.image} alt={selectedProject.subtitle} className="w-full h-full object-cover opacity-70" />
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent" />
-                <div className="absolute bottom-4 left-6">
-                  <Badge className="mb-2 bg-sky-500 text-white border-none">{selectedProject.title}</Badge>
-                  <h2 className="text-2xl md:text-3xl font-bold">{selectedProject.subtitle}</h2>
+                <div className="absolute bottom-4 left-6 z-10">
+                  <Badge className="mb-2 bg-sky-500 hover:bg-sky-600 text-white border-none shadow-sm">{selectedProject.title}</Badge>
+                  <h2 className="text-2xl md:text-3xl font-bold text-white">{selectedProject.subtitle}</h2>
                 </div>
               </div>
+
               <div className="space-y-6">
-                <DialogDescription className="text-base text-slate-300 leading-relaxed text-left">
-                  {selectedProject.fullDescription}
-                </DialogDescription>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <h4 className="font-bold text-sky-400 mb-3 uppercase tracking-widest text-xs flex items-center gap-2">
-                      <Zap className="h-4 w-4" /> Key Features
-                    </h4>
-                    <ul className="space-y-2">
-                      {selectedProject.features.map((f, i) => (
-                        <li key={i} className="text-sm text-slate-400 flex items-start gap-2">
-                          <div className="w-1.5 h-1.5 rounded-full bg-sky-400 mt-1.5 shrink-0" /> {f}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-sky-400 mb-3 uppercase tracking-widest text-xs">Technologies</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedProject.technologies.map(t => (
-                        <Badge key={t} variant="outline" className="border-sky-500/30 text-sky-400 bg-sky-500/10">{t}</Badge>
-                      ))}
-                    </div>
+                <DialogHeader>
+                  <DialogDescription className="text-base md:text-lg text-slate-300 leading-relaxed text-left">
+                    {selectedProject.fullDescription}
+                  </DialogDescription>
+                </DialogHeader>
+
+                <div>
+                  <h4 className="font-bold text-white mb-3 flex items-center gap-2 uppercase tracking-widest text-xs text-sky-400">
+                    <Zap className="h-4 w-4" /> Key Features
+                  </h4>
+                  <ul className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {selectedProject.features.map((f, i) => (
+                      <li key={i} className="text-sm text-slate-400 flex items-start gap-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-sky-400 mt-1.5 flex-shrink-0 shadow-[0_0_5px_#38bdf8]" /> 
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div>
+                  <h4 className="font-bold text-white mb-3 uppercase tracking-widest text-xs text-sky-400">Technologies</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedProject.technologies.map(t => (
+                      <Badge key={t} variant="outline" className="border-sky-500/30 text-sky-400 bg-sky-500/10 hover:bg-sky-500/20 transition-colors">
+                        {t}
+                      </Badge>
+                    ))}
                   </div>
                 </div>
               </div>

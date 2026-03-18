@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useTheme } from '@/hooks/useTheme';
+// Import the global performance engine
+import { usePerformance } from '@/context/PerformanceContext'; 
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Moon, Sun, Menu } from 'lucide-react';
+import { Moon, Sun, Menu, Zap, ZapOff } from 'lucide-react';
 
 const navLinks = [
   { label: 'About', href: 'about' },
@@ -15,11 +17,13 @@ const navLinks = [
 
 export function Navigation() {
   const { resolvedTheme, toggleTheme } = useTheme();
+  // Destructure the performance state
+  const { isLowPower, togglePerformance } = usePerformance(); 
+  
   const [isScrolled, setIsScrolled] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [activeSection, setActiveSection] = useState('');
   
-  // --- Scroll state trackers ---
   const [isVisible, setIsVisible] = useState(true);
   const lastScrollY = useRef(0);
   const isManualScrolling = useRef(false);
@@ -30,7 +34,6 @@ export function Navigation() {
       const currentScrollY = window.scrollY;
       setIsScrolled(currentScrollY > 20);
       
-      // Hide-on-scroll logic (graceful on mobile, stays visible on desktop via CSS)
       if (currentScrollY > lastScrollY.current && currentScrollY > 50) {
         setIsVisible(false);
       } else {
@@ -38,16 +41,13 @@ export function Navigation() {
       }
       lastScrollY.current = currentScrollY;
 
-      // Don't auto-update if the user just clicked a nav link
       if (isManualScrolling.current) return;
 
-      // Reset if at the very top
       if (currentScrollY < 100) {
         setActiveSection('');
         return;
       }
 
-      // 1. Check if user hit the absolute bottom of the page
       const isAtBottom = window.innerHeight + Math.round(currentScrollY) >= document.documentElement.scrollHeight - 50;
       
       if (isAtBottom) {
@@ -55,14 +55,11 @@ export function Navigation() {
         return;
       }
 
-      // 2. Mathematical Coordinate Check (100% Reliable)
       let currentActive = '';
-      
       for (const link of navLinks) {
         const element = document.getElementById(link.href);
         if (element) {
           const rect = element.getBoundingClientRect();
-          // If the top of the section reaches the upper 1/3rd of the screen, mark it active
           if (rect.top <= window.innerHeight / 3) {
             currentActive = link.href;
           }
@@ -74,29 +71,21 @@ export function Navigation() {
       }
     };
 
-    // Use passive listener for butter-smooth 60fps performance
     window.addEventListener('scroll', handleScroll, { passive: true });
-    
-    // Initial check on mount
     handleScroll(); 
-    
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // --- ROBUST CLICK-TO-SCROLL ---
   const scrollToSection = (e: React.MouseEvent, sectionId: string) => {
     e.preventDefault();
     e.stopPropagation();
 
     const element = document.getElementById(sectionId);
-    
     if (element) {
       isManualScrolling.current = true;
       setActiveSection(sectionId); 
-      
       const rect = element.getBoundingClientRect();
       const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-      // Account for the navbar height so it doesn't cover the title
       const targetY = rect.top + scrollTop - 80; 
 
       window.scrollTo({
@@ -104,7 +93,6 @@ export function Navigation() {
         behavior: 'smooth',
       });
 
-      // Unlock standard scroll detection after animation finishes
       setTimeout(() => {
         isManualScrolling.current = false;
       }, 1000);
@@ -131,7 +119,7 @@ export function Navigation() {
           transition={{ duration: 0.3 }}
           className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between"
         >
-          {/* RESTORED PREMIUM LOGO - High Contrast Black/White */}
+          {/* LOGO */}
           <a 
             href="/" 
             className="group flex items-center font-bold text-xl tracking-tight transition-opacity duration-300 hover:opacity-80"
@@ -163,7 +151,24 @@ export function Navigation() {
           </div>
 
           {/* Right Actions */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
+            
+            {/* PERFORMANCE TOGGLE (The "Zap" Button) */}
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={togglePerformance} 
+              className={`rounded-full transition-all duration-300 ${
+                isLowPower 
+                ? 'text-amber-500 bg-amber-500/10 hover:bg-amber-500/20' 
+                : 'text-sky-500 hover:bg-sky-500/10'
+              }`}
+              title={isLowPower ? "Switch to Visual Mode" : "Switch to Performance Mode"}
+            >
+              {isLowPower ? <ZapOff className="h-5 w-5" /> : <Zap className="h-5 w-5 fill-current" />}
+            </Button>
+
+            {/* Theme Toggle */}
             <Button 
               variant="ghost" 
               size="icon" 
@@ -202,6 +207,18 @@ export function Navigation() {
                       {link.label}
                     </button>
                   ))}
+                  
+                  {/* Mobile-only Low Power indicator */}
+                  <button
+                    onClick={togglePerformance}
+                    className={`flex items-center justify-between text-left text-lg font-bold p-4 rounded-xl transition-colors duration-200 ${
+                      isLowPower ? 'bg-amber-500/10 text-amber-600' : 'bg-sky-500/10 text-sky-600'
+                    }`}
+                  >
+                    {isLowPower ? 'Performance Mode' : 'Visual Mode'}
+                    {isLowPower ? <ZapOff className="h-5 w-5" /> : <Zap className="h-5 w-5 fill-current" />}
+                  </button>
+
                   <button
                     onClick={(e) => scrollToSection(e, 'contact')}
                     className={`text-left text-lg font-bold p-4 rounded-xl transition-colors duration-200 ${
