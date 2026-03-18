@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, useMotionValue, useSpring, useTransform, useAnimationFrame } from 'framer-motion';
-// Connect to the global performance engine (Now with Tri-Mode support)
+// Connect to the global performance engine
 import { usePerformance } from '@/context/PerformanceContext'; 
 import { Badge } from '@/components/ui/badge';
 import {
@@ -28,7 +28,6 @@ function TiltCard({ children, onClick, isLowPower, isMinimal }: { children: Reac
   const mouseXSpring = useSpring(x);
   const mouseYSpring = useSpring(y);
   
-  // TRI-MODE LOGIC: Disable tilt entirely in Minimal mode
   const rotateX = useTransform(mouseYSpring, [-0.5, 0.5], isMinimal ? ["0deg", "0deg"] : isLowPower ? ["2deg", "-2deg"] : ["7deg", "-7deg"]);
   const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], isMinimal ? ["0deg", "0deg"] : isLowPower ? ["-2deg", "2deg"] : ["-7deg", "7deg"]);
 
@@ -52,7 +51,6 @@ function TiltCard({ children, onClick, isLowPower, isMinimal }: { children: Reac
       <div className={`absolute top-1/2 -left-1.5 w-3 h-3 rounded-full bg-slate-950 border-2 border-slate-700 transition-all duration-300 z-30 transform -translate-y-1/2 ${isMinimal ? '' : 'group-hover:bg-sky-400 group-hover:border-sky-300 group-hover:shadow-[0_0_12px_#38bdf8]'}`} />
       <div className={`absolute top-1/2 -right-1.5 w-3 h-3 rounded-full bg-slate-950 border-2 border-slate-700 transition-all duration-300 z-30 transform -translate-y-1/2 ${isMinimal ? '' : 'group-hover:bg-sky-400 group-hover:border-sky-300 group-hover:shadow-[0_0_12px_#38bdf8]'}`} />
 
-      {/* Top animated border - Removed completely in Low Power & Minimal Mode */}
       {!isLowPower && !isMinimal && (
         <div className="absolute top-0 left-0 w-full h-1 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left z-20 rounded-t-xl overflow-hidden">
           <motion.div 
@@ -78,7 +76,6 @@ function TiltCard({ children, onClick, isLowPower, isMinimal }: { children: Reac
   );
 }
 
-// --- PROJECT DATA ---
 const projects = [
   {
     id: 'lighting',
@@ -154,29 +151,21 @@ const projects = [
   },
 ];
 
-// The 120-item virtual array guarantees you can swipe forever without hitting a dead end
 const INFINITE_PROJECTS = Array.from({ length: 120 }, (_, i) => projects[i % projects.length]);
 
 export function Projects() {
   const [selectedProject, setSelectedProject] = useState<typeof projects[0] | null>(null);
   const [itemsPerPage, setItemsPerPage] = useState(3);
-  
-  // Start perfectly in the middle of the 120 elements
   const [startIndex, setStartIndex] = useState(60); 
   const containerRef = useRef<HTMLDivElement>(null);
-
-  // Destructure Tri-Mode State
   const { isLowPower, isMinimal } = usePerformance(); 
 
-  // --- SEAMLESS PHYSICS ENGINE FOR BACKGROUND LINES & GRADIENTS ---
   const trace1Y = useMotionValue(-100);
   const trace2Y = useMotionValue(-100);
   const trace3X = useMotionValue(-100);
-  
   const gradientPos = useMotionValue(0);
   const gradientDirection = useRef(1);
 
-  // TRI-MODE THROTTLE: Minimal = 0 (Stop), Performance = 0.2 (Slow), Visual = 1 (Fast)
   const speedMultiplier = useSpring(isMinimal ? 0 : isLowPower ? 0.2 : 1, { stiffness: 40, damping: 20 });
 
   useEffect(() => {
@@ -188,7 +177,6 @@ export function Projects() {
     const dSec = delta / 1000;
     const m = speedMultiplier.get();
 
-    // Trace Math
     let y1 = trace1Y.get() + (50 * m * dSec);
     if (y1 >= 100) y1 -= 200;
     trace1Y.set(y1);
@@ -201,7 +189,6 @@ export function Projects() {
     if (x3 >= 100) x3 -= 200;
     trace3X.set(x3);
 
-    // Gradient Math (Used for the header divider line so it doesn't jump)
     let gP = gradientPos.get() + (40 * m * dSec * gradientDirection.current);
     if (gP >= 100) {
       gP = 100 - (gP - 100);
@@ -217,11 +204,10 @@ export function Projects() {
   const t2 = useTransform(trace2Y, v => `${v}%`);
   const t3 = useTransform(trace3X, v => `${v}%`);
   const bgPosString = useTransform(gradientPos, v => `${v}% 50%`);
-  // --------------------------------------------------
 
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth < 640) setItemsPerPage(1); 
+      if (window.innerWidth < 768) setItemsPerPage(1); 
       else if (window.innerWidth < 1024) setItemsPerPage(2);
       else setItemsPerPage(3);
     };
@@ -233,52 +219,29 @@ export function Projects() {
   const next = () => setStartIndex((prev) => prev + 1);
   const prev = () => setStartIndex((prev) => prev - 1);
 
-  // --- GLIDE MOMENTUM SWIPING ---
-  const handleDragEnd = (event: any, info: any) => {
-    const velocity = info.velocity.x;
-    const offset = info.offset.x;
-    const itemWidth = window.innerWidth / itemsPerPage;
-    
-    const glidePower = Math.round((offset + velocity * 0.2) / itemWidth);
-
-    if (glidePower <= -1) {
-      setStartIndex((prev) => prev + Math.abs(glidePower));
-    } else if (glidePower >= 1) {
-      setStartIndex((prev) => prev - glidePower);
-    }
-  };
-
   return (
     <section id="projects" className="relative py-24 lg:py-32 min-h-screen flex flex-col justify-center bg-slate-950 overflow-hidden text-slate-300">
-      
-      {/* Background Matrix */}
       <div 
         className="absolute inset-0 opacity-10 pointer-events-none" 
         style={{ backgroundImage: 'linear-gradient(rgba(148, 163, 184, 0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(148, 163, 184, 0.2) 1px, transparent 1px)', backgroundSize: '40px 40px' }} 
       />
 
-      {/* Central Background Glow - Fades out entirely in Minimal Mode */}
       <div 
         className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full pointer-events-none transition-all duration-1000 ${
           isMinimal ? 'opacity-0' : isLowPower ? 'bg-sky-500/5 blur-[80px] opacity-100' : 'bg-sky-500/10 blur-[150px] opacity-100'
         }`} 
       />
 
-      {/* Seamless Electricity Traces - Tied to Physics Engine & Opacity fades in Minimal mode */}
       <motion.div animate={{ opacity: isMinimal ? 0 : 1 }} transition={{ duration: 1 }} className="absolute top-0 left-[20%] w-[1px] h-full bg-gradient-to-b from-transparent via-sky-400/80 to-transparent shadow-[0_0_10px_#38bdf8]" style={{ y: t1 }} />
       <motion.div animate={{ opacity: isMinimal ? 0 : 1 }} transition={{ duration: 1 }} className="absolute top-0 right-[25%] w-[1px] h-full bg-gradient-to-b from-transparent via-blue-500/80 to-transparent shadow-[0_0_10px_#3b82f6]" style={{ y: t2 }} />
       <motion.div animate={{ opacity: isMinimal ? 0 : 1 }} transition={{ duration: 1 }} className="absolute top-[30%] left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-sky-400/50 to-transparent shadow-[0_0_10px_#38bdf8]" style={{ x: t3 }} />
 
       <div className="relative max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 z-10 w-full">
-        
-        {/* Section Header */}
         <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center max-w-2xl mx-auto mb-16">
           <motion.div whileHover={isMinimal ? {} : { scale: 1.05 }} className="inline-block mb-4 cursor-default">
             <div className="relative overflow-hidden inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-sky-500/10 border border-sky-500/20">
               <span className={`w-2 h-2 rounded-full bg-sky-500 relative z-10 ${isMinimal || isLowPower ? '' : 'animate-pulse'}`} />
               <span className="text-sky-400 text-xs font-bold uppercase tracking-widest relative z-10">My Work</span>
-              
-              {/* THE FAST SHINE: Disabled cleanly in Performance & Minimal Mode */}
               {!isLowPower && !isMinimal && (
                 <motion.div 
                   className="absolute top-0 bottom-0 w-full bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12 z-0"
@@ -288,10 +251,7 @@ export function Projects() {
               )}
             </div>
           </motion.div>
-
           <h2 className="text-4xl md:text-5xl font-bold text-white tracking-tight mb-6">Selected Projects</h2>
-          
-          {/* Animated Header Divider line - Tied to Physics Engine to prevent teleporting */}
           <motion.div 
             className="w-20 h-1.5 rounded-full mx-auto"
             style={{ 
@@ -305,21 +265,24 @@ export function Projects() {
         {/* --- CAROUSEL WRAPPER --- */}
         <div className="relative mt-12 w-full">
           
-          <button onClick={prev} className="hidden md:flex absolute top-1/2 -left-2 lg:-left-12 -translate-y-1/2 w-12 h-12 bg-slate-900 border border-slate-700 rounded-full items-center justify-center text-sky-400 z-40 hover:bg-slate-800 active:scale-90 transition-all duration-300 shadow-[0_0_15px_rgba(0,0,0,0.5)]">
-            <ChevronLeft className="w-6 h-6" />
+          {/* MOBILE FRIENDLY BUTTONS: Now visible on all screens */}
+          <button 
+            onClick={prev} 
+            className="flex absolute top-1/2 -left-2 lg:-left-12 -translate-y-1/2 w-10 h-10 md:w-12 md:h-12 bg-slate-900/90 border border-slate-700 rounded-full items-center justify-center text-sky-400 z-40 hover:bg-slate-800 active:scale-90 transition-all duration-300 shadow-xl backdrop-blur-sm"
+          >
+            <ChevronLeft className="w-5 h-5 md:w-6 md:h-6" />
           </button>
           
-          <button onClick={next} className="hidden md:flex absolute top-1/2 -right-2 lg:-right-12 -translate-y-1/2 w-12 h-12 bg-slate-900 border border-slate-700 rounded-full items-center justify-center text-sky-400 z-40 hover:bg-slate-800 active:scale-90 transition-all duration-300 shadow-[0_0_15px_rgba(0,0,0,0.5)]">
-            <ChevronRight className="w-6 h-6" />
+          <button 
+            onClick={next} 
+            className="flex absolute top-1/2 -right-2 lg:-right-12 -translate-y-1/2 w-10 h-10 md:w-12 md:h-12 bg-slate-900/90 border border-slate-700 rounded-full items-center justify-center text-sky-400 z-40 hover:bg-slate-800 active:scale-90 transition-all duration-300 shadow-xl backdrop-blur-sm"
+          >
+            <ChevronRight className="w-5 h-5 md:w-6 md:h-6" />
           </button>
 
           <div ref={containerRef} className="overflow-visible w-full touch-pan-y">
             <motion.div 
-              className="flex items-stretch cursor-grab active:cursor-grabbing"
-              drag="x"
-              dragConstraints={{ left: 0, right: 0 }}
-              dragElastic={0.1}
-              onDragEnd={handleDragEnd}
+              className="flex items-stretch"
               animate={{ x: `-${startIndex * (100 / itemsPerPage)}%` }}
               transition={{ type: "spring", stiffness: 250, damping: 30 }}
             >
@@ -335,7 +298,6 @@ export function Projects() {
                     style={{ width: `${100 / itemsPerPage}%` }}
                     animate={{
                       opacity: isVisible ? 1 : (isEdge ? 0.4 : 0),
-                      // MINIMAL MODE: Completely drop the blur filter for sharp, flat text rendering
                       filter: isMinimal || isHidden ? 'none' : (isVisible ? 'blur(0px)' : (isLowPower ? 'blur(3px)' : 'blur(8px)')),
                       scale: isVisible ? 1 : 0.85,
                       pointerEvents: isVisible ? 'auto' : 'none',
@@ -345,7 +307,6 @@ export function Projects() {
                     {!isHidden && (
                       <TiltCard isLowPower={isLowPower} isMinimal={isMinimal} onClick={() => { if(isVisible) setSelectedProject(project); }}>
                         <div className="relative h-44 overflow-hidden bg-slate-800">
-                          {/* MINIMAL MODE: Disable image scale hover */}
                           <img src={project.image} alt={project.title} loading="lazy" className={`w-full h-full object-cover opacity-60 transition-all duration-700 ${isMinimal ? '' : 'group-hover:opacity-100 group-hover:scale-110'}`} />
                           <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent" />
                           <Badge className="absolute top-4 right-4 z-20 bg-sky-500/20 text-sky-400 border-sky-500/30 backdrop-blur-md uppercase text-[9px] font-bold">
@@ -354,23 +315,18 @@ export function Projects() {
                         </div>
 
                         <div className="p-6 bg-slate-900 flex-grow flex flex-col pointer-events-none">
-                          {/* MINIMAL MODE: Disable icon box background glow on hover */}
                           <div className={`w-10 h-10 bg-slate-800 rounded-lg flex items-center justify-center border border-slate-700 mb-4 shadow-inner transition-colors ${isMinimal ? '' : 'group-hover:bg-sky-500/20'}`}>
                             <project.icon className="w-5 h-5 text-sky-400" />
                           </div>
-                          
                           <h3 className={`text-xl font-bold text-white mb-2 line-clamp-1 transition-colors ${isMinimal ? '' : 'group-hover:text-sky-400'}`}>{project.subtitle}</h3>
                           <p className="text-xs text-slate-400 leading-relaxed mb-6 line-clamp-3">{project.description}</p>
-                          
                           <div className="flex flex-wrap gap-1.5 mb-6">
                             {project.tags.map((tag) => (
                               <span key={tag} className="px-2 py-0.5 bg-slate-800 text-slate-400 text-[9px] uppercase font-bold tracking-wider rounded border border-slate-700">{tag}</span>
                             ))}
                           </div>
-
                           <div className="flex items-center gap-2 text-sky-400 font-bold text-xs group/btn mt-auto w-fit">
                             Explore Concept 
-                            {/* MINIMAL MODE: Disable arrow translation on hover */}
                             <ExternalLink className={`w-3.5 h-3.5 transform transition-transform ${isMinimal ? '' : 'group-hover/btn:translate-x-1 group-hover/btn:-translate-y-0.5'}`} />
                           </div>
                         </div>
@@ -384,12 +340,10 @@ export function Projects() {
         </div>
       </div>
 
-      {/* --- Z-INDEX SHIELD (Chatbot Blocker) --- */}
       {!!selectedProject && (
         <div className="fixed inset-0 z-[9990] bg-black/40 backdrop-blur-sm pointer-events-auto" aria-hidden="true" />
       )}
 
-      {/* --- MODAL (Strictly Dark Mode) --- */}
       <Dialog open={!!selectedProject} onOpenChange={() => setSelectedProject(null)}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-slate-900 border-slate-700 text-white shadow-[0_0_50px_rgba(0,0,0,0.5)] !z-[9999]">
           {selectedProject && (
