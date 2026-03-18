@@ -168,17 +168,19 @@ interface StatItemProps {
 
 function StatItem({ value, label, suffix = '', tooltip, isCounter = false }: StatItemProps) {
   return (
-    <motion.div variants={fadeInUp} className="text-center relative group cursor-help">
-      <div className="text-3xl sm:text-4xl font-bold text-accent-blue transition-colors group-hover:text-blue-400">
+    <motion.div variants={fadeInUp} className="text-center relative group cursor-help px-1">
+      {/* MOBILE UI FIX: Greatly reduced mobile font size (text-lg) to fit 4 in a row, expanding to text-4xl on desktop */}
+      <div className="text-lg sm:text-3xl md:text-4xl font-bold text-accent-blue transition-colors group-hover:text-blue-400 leading-tight truncate">
         {isCounter && typeof value === 'number' ? <Counter end={value} /> : value}{suffix}
       </div>
-      <div className="text-sm text-muted-foreground mt-1 transition-colors group-hover:text-foreground">
+      {/* MOBILE UI FIX: Reduced label to text-[10px] for mobile */}
+      <div className="text-[10px] sm:text-xs md:text-sm text-muted-foreground mt-1 transition-colors group-hover:text-foreground leading-tight">
         {label}
       </div>
       
       {tooltip && (
-        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50 translate-y-2 group-hover:translate-y-0">
-          <div className="bg-slate-900/95 backdrop-blur-md border border-slate-700 rounded-xl p-3 shadow-2xl text-[11px] text-slate-300 leading-relaxed text-center">
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-48 sm:w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50 translate-y-2 group-hover:translate-y-0">
+          <div className="bg-slate-900/95 backdrop-blur-md border border-slate-700 rounded-xl p-3 shadow-2xl text-[10px] sm:text-[11px] text-slate-300 leading-relaxed text-center">
             {tooltip}
             <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-[1px] border-4 border-transparent border-t-slate-700" />
             <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-[2px] border-4 border-transparent border-t-slate-900" />
@@ -309,8 +311,8 @@ export function Hero() {
 
             </motion.div>
 
-            {/* STATS GRID */}
-            <motion.div variants={staggerContainer} className="grid grid-cols-2 sm:grid-cols-4 gap-6">
+            {/* STATS GRID - MOBILE UI FIX: Enforced 4 columns on all screen sizes with reduced gap on mobile */}
+            <motion.div variants={staggerContainer} className="grid grid-cols-4 gap-2 sm:gap-6 w-full">
               <StatItem 
                 value={<OrdinalSequence sequence={['1st', '2nd', '3rd']} />} 
                 label="Year Standing" 

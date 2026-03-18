@@ -24,23 +24,17 @@ export function Navigation() {
   const [isOpen, setIsOpen] = useState(false);
   const [activeSection, setActiveSection] = useState('');
   
-  const [isVisible, setIsVisible] = useState(true);
-  const lastScrollY = useRef(0);
   const isManualScrolling = useRef(false);
 
   // --- BULLETPROOF SCROLL SPY LOGIC ---
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
+      
+      // Still triggers the glass background effect when scrolling down
       setIsScrolled(currentScrollY > 20);
       
-      if (currentScrollY > lastScrollY.current && currentScrollY > 50) {
-        setIsVisible(false);
-      } else {
-        setIsVisible(true);
-      }
-      lastScrollY.current = currentScrollY;
-
+      // If we are clicking a nav link, ignore scroll spy temporarily
       if (isManualScrolling.current) return;
 
       if (currentScrollY < 100) {
@@ -48,13 +42,14 @@ export function Navigation() {
         return;
       }
 
+      // Check if user hit the bottom of the page
       const isAtBottom = window.innerHeight + Math.round(currentScrollY) >= document.documentElement.scrollHeight - 50;
-      
       if (isAtBottom) {
         setActiveSection(navLinks[navLinks.length - 1].href);
         return;
       }
 
+      // Determine which section is currently active
       let currentActive = '';
       for (const link of navLinks) {
         const element = document.getElementById(link.href);
@@ -101,11 +96,7 @@ export function Navigation() {
   };
 
   return (
-    <header
-      className={`fixed top-0 left-0 right-0 z-[100] transition-transform duration-300 ease-in-out ${
-        !isVisible ? '-translate-y-full md:translate-y-0' : 'translate-y-0'
-      }`}
-    >
+    <header className="fixed top-0 left-0 right-0 z-[100] transition-transform duration-300 ease-in-out translate-y-0">
       <div
         className={`w-full transition-colors duration-300 ${
           isScrolled
