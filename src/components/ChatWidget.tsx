@@ -78,7 +78,7 @@ const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
 const getCurrentTime = () => new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 const INITIAL_MESSAGE = "Hello! I'm Karl. Thanks for visiting my portfolio. What would you like to know about my engineering background or projects?";
 const SUGGESTED_QUESTIONS = [
-  "Could you tell me more about your ongoing thesis?",
+  "What makes your BMEE joint degree program unique?",
   "What are your strongest technical skills?",
   "Can I see your resume?"
 ];
