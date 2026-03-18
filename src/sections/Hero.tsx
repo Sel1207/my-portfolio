@@ -120,7 +120,7 @@ function Magnetic({ children }: { children: ReactNode }) {
   const { isMinimal } = usePerformance();
 
   const handleMouseMove = (e: MouseEvent<HTMLDivElement>) => {
-    if (isMinimal) return; // TRI-MODE: Disable magnetic effect entirely in Minimal mode
+    if (isMinimal) return; 
     const { clientX, clientY } = e;
     if (ref.current) {
       const { height, width, left, top } = ref.current.getBoundingClientRect();
@@ -159,7 +159,6 @@ const staggerContainer = {
   }
 };
 
-// --- STAT ITEM CONFIGURATION ---
 interface StatItemProps {
   value: number | string | ReactNode;
   label: string;
@@ -171,7 +170,6 @@ interface StatItemProps {
 function StatItem({ value, label, suffix = '', tooltip, isCounter = false }: StatItemProps) {
   return (
     <motion.div variants={fadeInUp} className="text-center relative group cursor-help px-1">
-      {/* Reduced mobile font size to fit 4 in a row smoothly */}
       <div className="text-lg sm:text-3xl md:text-4xl font-bold text-accent-blue transition-colors group-hover:text-blue-400 leading-tight truncate">
         {isCounter && typeof value === 'number' ? <Counter end={value} /> : value}{suffix}
       </div>
@@ -192,14 +190,11 @@ function StatItem({ value, label, suffix = '', tooltip, isCounter = false }: Sta
   );
 }
 
-// --- MAIN HERO COMPONENT ---
 export function Hero() {
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
-  
-  // Destructure global Tri-Mode state
   const { isLowPower, isMinimal } = usePerformance();
 
-  // --- SEAMLESS PHYSICS ENGINE FOR FLOATING & GRADIENTS ---
+  // --- SEAMLESS PHYSICS ENGINE ---
   const timeRef = useRef(0);
   const gradientPos = useMotionValue(0);
   const gradientDirection = useRef(1);
@@ -208,8 +203,12 @@ export function Hero() {
   const floatMedalY = useMotionValue(0);
   const blobScale = useMotionValue(1);
   const blobOpacity = useMotionValue(0.3);
+  
+  // MotionValues for drop-shadows to ensure zero-flicker transitions
+  const textShadowOpacity = useMotionValue(0.4);
+  const medalShadowOpacity = useMotionValue(0.3);
 
-  // TRI-MODE THROTTLE: Minimal = 0 (Stop), Performance = 0.2 (Slow), Visual = 1 (Fast)
+  // Speed Multiplier Spring is the "Gas Pedal" - it smooths out the transition from 0 to 1
   const speedMultiplier = useSpring(isMinimal ? 0 : isLowPower ? 0.2 : 1, { stiffness: 40, damping: 20 });
 
   useEffect(() => {
@@ -221,18 +220,14 @@ export function Hero() {
     const dSec = delta / 1000;
     const m = speedMultiplier.get();
 
+    // 1. Text Gradient Logic
     if (isMinimal) {
-      // SETTLE SMOOTHLY: Mathematically glide everything back to its resting state
+      // Shutdown Decay
       const currentGPos = gradientPos.get();
-      gradientPos.set(currentGPos + (0 - currentGPos) * 0.05); // Text gradient settles to 0% (Blue)
+      gradientPos.set(currentGPos + (0 - currentGPos) * 0.04); 
       gradientDirection.current = 1;
-
-      floatImgY.set(floatImgY.get() + (0 - floatImgY.get()) * 0.05); // Portrait settles to center
-      floatMedalY.set(floatMedalY.get() + (0 - floatMedalY.get()) * 0.05); // Medal settles to center
-      blobScale.set(blobScale.get() + (1 - blobScale.get()) * 0.05); 
-      blobOpacity.set(blobOpacity.get() + (0 - blobOpacity.get()) * 0.05); // Glows fade to 0 opacity
     } else {
-      // 1. Text Gradient Ping-Pong Math
+      // Active Ping-Pong
       let gP = gradientPos.get() + (40 * m * dSec * gradientDirection.current);
       if (gP >= 100) {
         gP = 100 - (gP - 100);
@@ -242,18 +237,34 @@ export function Hero() {
         gradientDirection.current = 1;
       }
       gradientPos.set(gP);
-
-      // 2. Continuous Sine Waves for Floating & Pulsing physics
-      timeRef.current += dSec * m;
-      const t = timeRef.current;
-      floatImgY.set(Math.sin(t * 1.04) * -7.5 - 7.5); 
-      floatMedalY.set(Math.sin(t * 2.09) * -2.5 - 2.5);
-      blobScale.set(1.1 + Math.sin(t * 0.78) * 0.1);
-      blobOpacity.set(0.4 + Math.sin(t * 0.78) * 0.1);
     }
+
+    // 2. Hardware-Accelerated Shadow Fading (Bidirectional)
+    const targetTextAlpha = isMinimal ? 0 : 0.4;
+    const targetMedalAlpha = isMinimal ? 0 : 0.3;
+    textShadowOpacity.set(textShadowOpacity.get() + (targetTextAlpha - textShadowOpacity.get()) * 0.08);
+    medalShadowOpacity.set(medalShadowOpacity.get() + (targetMedalAlpha - medalShadowOpacity.get()) * 0.08);
+
+    // 3. Physical Sine Wave Synthesis
+    // timeRef only increments when speed is > 0, ensuring we resume where we left off
+    timeRef.current += dSec * m;
+    const t = timeRef.current;
+
+    // We calculate targets based on mode, then interpolate to them to ensure no jumps
+    const targetFloatImg = isMinimal ? 0 : Math.sin(t * 1.04) * -7.5 - 7.5;
+    const targetFloatMedal = isMinimal ? 0 : Math.sin(t * 2.09) * -2.5 - 2.5;
+    const targetBlobScale = isMinimal ? 1 : 1.1 + Math.sin(t * 0.78) * 0.1;
+    const targetBlobOpacity = isMinimal ? 0 : (isLowPower ? 0.2 : 0.4) + Math.sin(t * 0.78) * 0.1;
+
+    floatImgY.set(floatImgY.get() + (targetFloatImg - floatImgY.get()) * 0.1);
+    floatMedalY.set(floatMedalY.get() + (targetFloatMedal - floatMedalY.get()) * 0.1);
+    blobScale.set(blobScale.get() + (targetBlobScale - blobScale.get()) * 0.05);
+    blobOpacity.set(blobOpacity.get() + (targetBlobOpacity - blobOpacity.get()) * 0.05);
   });
 
   const bgPosString = useTransform(gradientPos, v => `${v}% 50%`);
+  const textFilterString = useTransform(textShadowOpacity, v => `drop-shadow(0 0 12px rgba(59, 130, 246, ${v}))`);
+  const medalFilterString = useTransform(medalShadowOpacity, v => `drop-shadow(0px 10px 15px rgba(14, 165, 233, ${v}))`);
   // --------------------------------------------------
 
   const scrollToSection = (id: string) => {
@@ -269,7 +280,7 @@ export function Hero() {
   return (
     <section className="relative min-h-screen flex flex-col justify-center pt-32 md:pt-20 pb-16 overflow-hidden bg-background">
       
-      {/* Animated Background Blobs - Handled exclusively by the smooth physics engine decay */}
+      {/* Animated Background Blobs - Handled exclusively by the physics engine */}
       <motion.div 
         className={`absolute top-1/4 right-0 w-96 h-96 bg-accent-blue/10 rounded-full transition-[filter] duration-1000 ${
           isLowPower ? 'blur-2xl' : 'blur-3xl'
@@ -283,7 +294,6 @@ export function Hero() {
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full flex-grow flex items-center z-10">
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center w-full">
           
-          {/* Left Content Column */}
           <motion.div 
             className="order-2 lg:order-1"
             variants={staggerContainer}
@@ -294,7 +304,6 @@ export function Hero() {
               <motion.div whileHover={isMinimal ? {} : { scale: 1.05 }} className="inline-block">
                 <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white dark:bg-slate-800 shadow-lg border border-slate-200 dark:border-slate-700 transition-colors hover:bg-slate-50 dark:hover:bg-slate-700/80 cursor-default">
                   <span className="relative flex h-3 w-3">
-                    {/* TRI-MODE: Hidden on Minimal, Pulse on Low Power, Ping on Visual */}
                     <span className={`absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75 ${isMinimal ? 'hidden' : isLowPower ? 'animate-pulse' : 'animate-ping'}`}></span>
                     <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
                   </span>
@@ -305,7 +314,6 @@ export function Hero() {
               </motion.div>
             </motion.div>
 
-            {/* Hero Headline */}
             <motion.div variants={fadeInUp}>
               <p className="text-lg text-muted-foreground mb-2">Hello, I'm</p>
               <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold mb-4 flex flex-col items-start">
@@ -319,15 +327,14 @@ export function Hero() {
                     WebkitTextFillColor: "transparent",
                     backgroundClip: "text",
                     color: "transparent",
-                    filter: isMinimal ? "none" : "drop-shadow(0 0 12px rgba(59, 130, 246, 0.4))",
-                    backgroundPosition: bgPosString // Seamlessly slows to a halt without teleporting
+                    filter: textFilterString, 
+                    backgroundPosition: bgPosString 
                   }}
                 >
                   Espino
                 </motion.span>
               </h1>
               
-              {/* Custom Typewriter Implementation */}
               <div className="text-xl font-medium text-blue-400 h-8 mb-6">
                 <TypewriterEffect />
               </div>
@@ -340,7 +347,6 @@ export function Hero() {
               <span className="text-accent-blue font-semibold">control</span>.
             </motion.p>
 
-            {/* CTA BUTTONS */}
             <motion.div variants={fadeInUp} className="flex flex-wrap gap-4 mb-12">
               <Magnetic>
                 <Button size="lg" className={`bg-accent-blue rounded-xl px-8 transition-transform ${isMinimal ? '' : 'hover:scale-105'}`} onClick={() => scrollToSection('projects')}>
@@ -348,7 +354,6 @@ export function Hero() {
                 </Button>
               </Magnetic>
               
-              {/* DOWNLOAD BUTTON */}
               <Magnetic>
                 <a 
                   href="/Karl_Espino_Resume.pdf" 
@@ -363,7 +368,6 @@ export function Hero() {
               </Magnetic>
             </motion.div>
 
-            {/* STATS GRID - 4 Columns forced for mobile layout */}
             <motion.div variants={staggerContainer} className="grid grid-cols-4 gap-2 sm:gap-6 w-full">
               <StatItem 
                 value={<OrdinalSequence sequence={['1st', '2nd', '3rd']} />} 
@@ -390,20 +394,17 @@ export function Hero() {
             </motion.div>
           </motion.div>
 
-          {/* Right Image Column */}
           <motion.div 
             initial={{ opacity: 0, x: 50 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, delay: 0.4 }}
             className="order-1 lg:order-2 flex justify-center lg:justify-end"
           >
-            {/* Physics-driven Floating Animation Wrapper - Decays to 0 smoothly on Minimal */}
             <motion.div 
               className="relative group cursor-zoom-in"
               onClick={() => setIsImageModalOpen(true)}
               style={{ y: floatImgY }}
             >
-              {/* Background Glow - Handled smoothly by blobOpacity going to 0 */}
               <motion.div 
                 className={`absolute inset-0 bg-accent-blue/30 rounded-3xl scale-110 transition-[filter] duration-1000 ${
                   isLowPower ? 'blur-2xl' : 'blur-3xl'
@@ -412,7 +413,6 @@ export function Hero() {
               />
               
               <div className="relative w-72 h-96 sm:w-80 sm:h-[28rem] lg:w-96 lg:h-[32rem] rounded-3xl overflow-hidden border-2 border-white/10 shadow-2xl transition-all duration-300 group-hover:border-accent-blue/30">
-                {/* MINIMAL MODE: Disables image color/scale on hover to save rendering costs */}
                 <img 
                   src="/hero-portrait.jpg" 
                   alt="Karl Philip Espino" 
@@ -435,7 +435,6 @@ export function Hero() {
                 </div>
               </div>
 
-              {/* MEDAL: Decays to 0 gracefully on Minimal without teleporting */}
               <motion.div 
                 className="absolute -top-4 -right-4 text-white rounded-2xl p-4 shadow-xl z-30"
                 style={{
@@ -443,7 +442,7 @@ export function Hero() {
                   backgroundSize: "300% 300%",
                   y: floatMedalY,
                   backgroundPosition: bgPosString,
-                  filter: isMinimal ? 'none' : 'drop-shadow(0px 10px 15px rgba(14, 165, 233, 0.3))'
+                  filter: medalFilterString
                 }}
               >
                 <Award className="h-6 w-6" />
@@ -453,7 +452,6 @@ export function Hero() {
         </div>
       </div>
 
-      {/* SCROLL WHEEL: Uses framer-motion logic to settle smoothly when isMinimal is toggled */}
       <motion.div 
         initial={{ opacity: 0 }} 
         animate={{ opacity: 1, y: isMinimal ? 0 : [0, 10, 0] }} 
@@ -472,12 +470,10 @@ export function Hero() {
         </div>
       </motion.div>
 
-      {/* --- Z-INDEX SHIELD (Chatbot Blocker) --- */}
       {isImageModalOpen && (
         <div className="fixed inset-0 z-[9990] bg-black/40 backdrop-blur-sm pointer-events-auto" aria-hidden="true" />
       )}
 
-      {/* IMAGE POPUP MODAL */}
       <Dialog open={isImageModalOpen} onOpenChange={setIsImageModalOpen}>
         <DialogContent className="max-w-4xl p-0 bg-slate-900 border-slate-800 overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.5)] !z-[9999] outline-none border-none">
           <button 

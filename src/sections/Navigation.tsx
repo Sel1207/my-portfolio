@@ -17,7 +17,7 @@ const navLinks = [
 export function Navigation() {
   const { resolvedTheme, toggleTheme } = useTheme();
   
-  // Destructure the new tri-mode state
+  // Destructure the tri-mode state (Internal names stay the same to preserve functionality)
   const { mode, cycleMode } = usePerformance(); 
   
   const [isScrolled, setIsScrolled] = useState(false);
@@ -153,7 +153,8 @@ export function Navigation() {
                 mode === 'performance' ? 'text-sky-500 hover:bg-sky-500/10' :
                 'text-emerald-500 hover:bg-emerald-500/10'
               }`}
-              title={`Current Mode: ${mode.charAt(0).toUpperCase() + mode.slice(1)}`}
+              // Hover text maps the internal state to your custom hardware names
+              title={`Current Mode: ${mode === 'visual' ? 'Turbo' : mode === 'performance' ? 'Performance' : 'Eco'}`}
             >
               {mode === 'visual' && <Sparkles className="h-5 w-5" />}
               {mode === 'performance' && <Zap className="h-5 w-5 fill-current" />}
@@ -209,7 +210,8 @@ export function Navigation() {
                       'bg-emerald-500/10 text-emerald-500'
                     }`}
                   >
-                    {mode === 'visual' ? 'Visual Mode' : mode === 'performance' ? 'Performance Mode' : 'Minimal Mode'}
+                    {/* Mobile text maps the internal state to your custom hardware names */}
+                    {mode === 'visual' ? 'Turbo Mode' : mode === 'performance' ? 'Performance Mode' : 'Eco Mode'}
                     {mode === 'visual' && <Sparkles className="h-5 w-5" />}
                     {mode === 'performance' && <Zap className="h-5 w-5 fill-current" />}
                     {mode === 'minimal' && <Leaf className="h-5 w-5" />}

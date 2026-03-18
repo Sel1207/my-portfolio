@@ -45,15 +45,15 @@ export function About() {
     const dSec = delta / 1000;
     const m = speedMultiplier.get();
 
-    let gP = gradientPos.get();
-
     if (isMinimal) {
-      // SETTLE AT BLUE: Smoothly glide the gradient back to 0% (the blue start of the gradient)
-      gP = gP + (0 - gP) * 0.05;
+      // SETTLE AT BLUE: Smoothly glide the gradient back to 0% without teleporting or flickering
+      // Using 0.03 decay for an ultra-smooth, graceful sweep matching the Hero section
+      const currentGPos = gradientPos.get();
+      gradientPos.set(currentGPos + (0 - currentGPos) * 0.03);
       gradientDirection.current = 1; // Reset direction so it flows right when re-enabled
     } else {
       // Ping-Pong Gradient Math (0% -> 100% -> 0%)
-      gP = gP + (40 * m * dSec * gradientDirection.current);
+      let gP = gradientPos.get() + (40 * m * dSec * gradientDirection.current);
       if (gP >= 100) {
         gP = 100 - (gP - 100);
         gradientDirection.current = -1;
@@ -61,9 +61,8 @@ export function About() {
         gP = Math.abs(gP);
         gradientDirection.current = 1;
       }
+      gradientPos.set(gP);
     }
-    
-    gradientPos.set(gP);
   });
 
   const bgPosString = useTransform(gradientPos, v => `${v}% 50%`);
@@ -72,9 +71,11 @@ export function About() {
   return (
     <section id="about" className="py-24 lg:py-32 relative bg-background overflow-hidden">
       
-      {/* Subtle Background Glow - Smoothly dim in Performance, hidden in Minimal Mode */}
-      <div className={`absolute top-1/2 left-0 -translate-y-1/2 w-[500px] h-[500px] rounded-full pointer-events-none transition-all duration-1000 ${
-        isMinimal ? 'opacity-0' : isLowPower ? 'bg-accent-blue/5 blur-[60px] opacity-40' : 'bg-accent-blue/5 blur-[100px] opacity-100'
+      {/* Subtle Background Glow - CSS fixed to prevent dropping the blur filter during the fade-out */}
+      <div className={`absolute top-1/2 left-0 -translate-y-1/2 w-[500px] h-[500px] rounded-full pointer-events-none transition-opacity duration-1000 bg-accent-blue/5 ${
+        isLowPower ? 'blur-[60px]' : 'blur-[100px]'
+      } ${
+        isMinimal ? 'opacity-0' : isLowPower ? 'opacity-40' : 'opacity-100'
       }`} />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
@@ -113,7 +114,7 @@ export function About() {
                   WebkitTextFillColor: "transparent",
                   backgroundClip: "text",
                   color: "transparent",
-                  backgroundPosition: bgPosString // Driven by physics engine
+                  backgroundPosition: bgPosString // Driven by physics engine smoothly
                 }}
               >
                 Future.
@@ -135,7 +136,7 @@ export function About() {
                     WebkitTextFillColor: "transparent",
                     backgroundClip: "text",
                     color: "transparent",
-                    backgroundPosition: bgPosString // Driven by physics engine
+                    backgroundPosition: bgPosString // Driven by physics engine smoothly
                   }}
                 >
                   power system protection, operation, and automation
@@ -168,7 +169,7 @@ export function About() {
             </div>
           </motion.div>
 
-          {/* --- MOBILE UI FIX: RIGHT COLUMN Education Timeline (Less Huge) --- */}
+          {/* --- RIGHT COLUMN Education Timeline --- */}
           <motion.div 
             initial={{ opacity: 0, x: 20 }} 
             whileInView={{ opacity: 1, x: 0 }} 
@@ -204,7 +205,7 @@ export function About() {
                       initial={item.isActive ? { scale: 1.1 } : {}}
                       // PERFORMANCE MODE: Disable hover physics
                       whileHover={item.isActive && !isLowPower && !isMinimal ? { scale: 1.2, rotate: 5 } : {}}
-                      transition={item.isActive ? { 
+                      transition={item.isActive && !isMinimal ? { 
                         scale: { type: "spring", stiffness: 300, damping: 15 },
                         rotate: { type: "spring", stiffness: 300, damping: 15 } 
                       } : {}}
