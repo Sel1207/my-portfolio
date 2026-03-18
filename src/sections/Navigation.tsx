@@ -200,7 +200,10 @@ export function Navigation() {
           <div className="flex items-center gap-2 sm:gap-3 z-20">
             {/* PERFORMANCE TOGGLE */}
             <Button 
-              variant="ghost" size="icon" onClick={cycleMode} 
+              variant="ghost" 
+              size="icon" 
+              onClick={cycleMode} 
+              title={`Current Mode: ${mode === 'visual' ? 'Turbo' : mode === 'performance' ? 'Performance' : 'Eco'}`}
               className={`rounded-full border border-transparent transition-all duration-300 ${
                 mode === 'visual' ? 'text-purple-400 hover:text-purple-400 hover:border-purple-500/30 hover:bg-foreground/5' :
                 mode === 'performance' ? 'text-sky-500 hover:text-sky-500 hover:border-sky-500/30 hover:bg-foreground/5' :
@@ -214,7 +217,10 @@ export function Navigation() {
 
             {/* THEME TOGGLE */}
             <Button 
-              variant="ghost" size="icon" onClick={toggleTheme} 
+              variant="ghost" 
+              size="icon" 
+              onClick={toggleTheme} 
+              title={`Switch to ${resolvedTheme === 'dark' ? 'Light' : 'Dark'} Mode`}
               className="rounded-full border border-transparent hover:border-foreground/10 hover:bg-foreground/5 transition-all duration-300 text-foreground/70 hover:text-foreground"
             >
               {resolvedTheme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
