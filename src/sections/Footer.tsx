@@ -51,22 +51,32 @@ export function Footer() {
   });
   // --------------------------------------------------
 
-  // --- SMART VISIBILITY LOGIC ---
+  // --- SMART VISIBILITY LOGIC (Mobile Optimized) ---
   useEffect(() => {
     const handleScroll = () => {
-      // Show button after scrolling 400px
-      if (window.scrollY > 400) {
+      // Fallback included for broader mobile browser support
+      const currentScrollY = window.scrollY || document.documentElement.scrollTop;
+      
+      if (currentScrollY > 400) {
         setShowButton(true);
       } else {
         setShowButton(false);
       }
     };
 
-    // FIX: Check the scroll position immediately on mount in case the user reloads at the bottom
-    handleScroll();
+    // FIX: Mobile browsers delay restoring scroll position until after React mounts.
+    // This 150ms timeout ensures we check AFTER the browser has jumped to the bottom.
+    const initialCheck = setTimeout(() => {
+      handleScroll();
+    }, 150); 
 
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    // Added { passive: true } for smoother scroll performance on mobile
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    
+    return () => {
+      clearTimeout(initialCheck);
+      window.removeEventListener('scroll', handleScroll);
+    };
   }, []);
 
   return (
@@ -168,7 +178,7 @@ export function Footer() {
           </div>
         </div>
 
-        {/* --- BACK TO TOP BUTTON (Fixed to match Chatbot behavior exactly) --- */}
+        {/* --- BACK TO TOP BUTTON --- */}
         <AnimatePresence>
           {showButton && (
             <motion.button
