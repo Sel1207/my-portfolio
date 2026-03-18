@@ -1,11 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useTheme } from '@/hooks/useTheme';
-// Import the global performance engine
 import { usePerformance } from '@/context/PerformanceContext'; 
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Moon, Sun, Menu, Zap, ZapOff } from 'lucide-react';
+import { Moon, Sun, Menu, Zap, Sparkles, Leaf } from 'lucide-react';
 
 const navLinks = [
   { label: 'About', href: 'about' },
@@ -17,8 +16,9 @@ const navLinks = [
 
 export function Navigation() {
   const { resolvedTheme, toggleTheme } = useTheme();
-  // Destructure the performance state
-  const { isLowPower, togglePerformance } = usePerformance(); 
+  
+  // Destructure the new tri-mode state
+  const { mode, cycleMode } = usePerformance(); 
   
   const [isScrolled, setIsScrolled] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
@@ -31,10 +31,9 @@ export function Navigation() {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
       
-      // Still triggers the glass background effect when scrolling down
+      // Triggers the glass background effect when scrolling down
       setIsScrolled(currentScrollY > 20);
       
-      // If we are clicking a nav link, ignore scroll spy temporarily
       if (isManualScrolling.current) return;
 
       if (currentScrollY < 100) {
@@ -144,19 +143,21 @@ export function Navigation() {
           {/* Right Actions */}
           <div className="flex items-center gap-2 sm:gap-3">
             
-            {/* PERFORMANCE TOGGLE (The "Zap" Button) */}
+            {/* TRI-MODE TOGGLE BUTTON (Desktop) */}
             <Button 
               variant="ghost" 
               size="icon" 
-              onClick={togglePerformance} 
+              onClick={cycleMode} 
               className={`rounded-full transition-all duration-300 ${
-                isLowPower 
-                ? 'text-amber-500 bg-amber-500/10 hover:bg-amber-500/20' 
-                : 'text-sky-500 hover:bg-sky-500/10'
+                mode === 'visual' ? 'text-purple-400 hover:bg-purple-500/10' :
+                mode === 'performance' ? 'text-sky-500 hover:bg-sky-500/10' :
+                'text-emerald-500 hover:bg-emerald-500/10'
               }`}
-              title={isLowPower ? "Switch to Visual Mode" : "Switch to Performance Mode"}
+              title={`Current Mode: ${mode.charAt(0).toUpperCase() + mode.slice(1)}`}
             >
-              {isLowPower ? <ZapOff className="h-5 w-5" /> : <Zap className="h-5 w-5 fill-current" />}
+              {mode === 'visual' && <Sparkles className="h-5 w-5" />}
+              {mode === 'performance' && <Zap className="h-5 w-5 fill-current" />}
+              {mode === 'minimal' && <Leaf className="h-5 w-5" />}
             </Button>
 
             {/* Theme Toggle */}
@@ -199,15 +200,19 @@ export function Navigation() {
                     </button>
                   ))}
                   
-                  {/* Mobile-only Low Power indicator */}
+                  {/* TRI-MODE TOGGLE BUTTON (Mobile) */}
                   <button
-                    onClick={togglePerformance}
+                    onClick={cycleMode}
                     className={`flex items-center justify-between text-left text-lg font-bold p-4 rounded-xl transition-colors duration-200 ${
-                      isLowPower ? 'bg-amber-500/10 text-amber-600' : 'bg-sky-500/10 text-sky-600'
+                      mode === 'visual' ? 'bg-purple-500/10 text-purple-400' :
+                      mode === 'performance' ? 'bg-sky-500/10 text-sky-500' :
+                      'bg-emerald-500/10 text-emerald-500'
                     }`}
                   >
-                    {isLowPower ? 'Performance Mode' : 'Visual Mode'}
-                    {isLowPower ? <ZapOff className="h-5 w-5" /> : <Zap className="h-5 w-5 fill-current" />}
+                    {mode === 'visual' ? 'Visual Mode' : mode === 'performance' ? 'Performance Mode' : 'Minimal Mode'}
+                    {mode === 'visual' && <Sparkles className="h-5 w-5" />}
+                    {mode === 'performance' && <Zap className="h-5 w-5 fill-current" />}
+                    {mode === 'minimal' && <Leaf className="h-5 w-5" />}
                   </button>
 
                   <button
