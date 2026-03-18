@@ -1,4 +1,4 @@
-import { useState, useEffect, useLayoutEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useTheme } from '@/hooks/useTheme';
 import { Button } from '@/components/ui/button';
@@ -19,69 +19,71 @@ export function Navigation() {
   const [isOpen, setIsOpen] = useState(false);
   const [activeSection, setActiveSection] = useState('');
   
-  // --- NEW: Scroll direction state ---
+  // --- Scroll state trackers ---
   const [isVisible, setIsVisible] = useState(true);
   const lastScrollY = useRef(0);
   const isManualScrolling = useRef(false);
 
-  // 1. Scroll State, Top Reset, & Hide-on-Scroll Logic
+  // --- BULLETPROOF SCROLL SPY LOGIC ---
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
       setIsScrolled(currentScrollY > 20);
       
-      // HIDE ON SCROLL DOWN (Mobile only via CSS later)
+      // Hide-on-scroll logic (graceful on mobile, stays visible on desktop via CSS)
       if (currentScrollY > lastScrollY.current && currentScrollY > 50) {
-        setIsVisible(false); // Scrolling down -> Hide
+        setIsVisible(false);
       } else {
-        setIsVisible(true);  // Scrolling up -> Show
+        setIsVisible(true);
       }
       lastScrollY.current = currentScrollY;
-      
+
+      // Don't auto-update if the user just clicked a nav link
+      if (isManualScrolling.current) return;
+
+      // Reset if at the very top
       if (currentScrollY < 100) {
         setActiveSection('');
+        return;
+      }
+
+      // 1. Check if user hit the absolute bottom of the page
+      const isAtBottom = window.innerHeight + Math.round(currentScrollY) >= document.documentElement.scrollHeight - 50;
+      
+      if (isAtBottom) {
+        setActiveSection(navLinks[navLinks.length - 1].href);
+        return;
+      }
+
+      // 2. Mathematical Coordinate Check (100% Reliable)
+      let currentActive = '';
+      
+      for (const link of navLinks) {
+        const element = document.getElementById(link.href);
+        if (element) {
+          const rect = element.getBoundingClientRect();
+          // If the top of the section reaches the upper 1/3rd of the screen, mark it active
+          if (rect.top <= window.innerHeight / 3) {
+            currentActive = link.href;
+          }
+        }
+      }
+
+      if (currentActive) {
+        setActiveSection(currentActive);
       }
     };
 
+    // Use passive listener for butter-smooth 60fps performance
     window.addEventListener('scroll', handleScroll, { passive: true });
-    handleScroll();
+    
+    // Initial check on mount
+    handleScroll(); 
+    
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // 2. Intersection Observer for Scroll Spy
-  useLayoutEffect(() => {
-    const observerOptions = {
-      root: null,
-      rootMargin: '-20% 0px -70% 0px',
-      threshold: 0,
-    };
-
-    const observerCallback = (entries: IntersectionObserverEntry[]) => {
-      if (isManualScrolling.current || window.scrollY < 100) return;
-
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          setActiveSection(entry.target.id);
-        }
-      });
-    };
-
-    const observer = new IntersectionObserver(observerCallback, observerOptions);
-
-    const timeoutId = setTimeout(() => {
-      navLinks.forEach((link) => {
-        const section = document.getElementById(link.href);
-        if (section) observer.observe(section);
-      });
-    }, 100);
-
-    return () => {
-      observer.disconnect();
-      clearTimeout(timeoutId);
-    };
-  }, []);
-
-  // 3. Robust Scroll Function
+  // --- ROBUST CLICK-TO-SCROLL ---
   const scrollToSection = (e: React.MouseEvent, sectionId: string) => {
     e.preventDefault();
     e.stopPropagation();
@@ -94,13 +96,15 @@ export function Navigation() {
       
       const rect = element.getBoundingClientRect();
       const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-      const targetY = rect.top + scrollTop - 80;
+      // Account for the navbar height so it doesn't cover the title
+      const targetY = rect.top + scrollTop - 80; 
 
       window.scrollTo({
         top: targetY,
         behavior: 'smooth',
       });
 
+      // Unlock standard scroll detection after animation finishes
       setTimeout(() => {
         isManualScrolling.current = false;
       }, 1000);
@@ -110,89 +114,110 @@ export function Navigation() {
 
   return (
     <header
-      // --- FIX: Added transform classes to handle the hide/show logic gracefully ---
-      className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-300 ease-in-out ${
+      className={`fixed top-0 left-0 right-0 z-[100] transition-transform duration-300 ease-in-out ${
         !isVisible ? '-translate-y-full md:translate-y-0' : 'translate-y-0'
-      } ${
-        isScrolled
-          ? 'bg-background/80 backdrop-blur-xl shadow-md border-b border-border/50'
-          : 'bg-transparent border-b border-transparent'
       }`}
     >
-      <motion.nav
-        initial={false}
-        animate={{ height: isScrolled ? 64 : 96 }}
-        className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between"
+      <div
+        className={`w-full transition-colors duration-300 ${
+          isScrolled
+            ? 'bg-background/80 backdrop-blur-lg shadow-sm border-b border-border'
+            : 'bg-transparent border-b border-transparent'
+        }`}
       >
-        {/* FIXED LOGO - NATIVE LINK BEHAVIOR */}
-        <a 
-          href="/" 
-          className="group flex items-center font-bold text-xl tracking-tight transition-transform duration-300 hover:scale-105"
-          aria-label="Home"
+        <motion.nav
+          initial={false}
+          animate={{ height: isScrolled ? 64 : 80 }}
+          transition={{ duration: 0.3 }}
+          className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between"
         >
-          <span className="bg-foreground text-background px-3 py-1.5 rounded-l-lg transition-all">
-            KP
-          </span>
-          <span className="border-2 border-l-0 border-foreground text-foreground px-3 py-1 rounded-r-lg transition-all">
-            Espino
-          </span>
-        </a>
-
-        {/* Desktop Navigation */}
-        <div className="hidden md:flex items-center gap-1">
-          {navLinks.map((link) => (
-            <button
-              key={link.href}
-              onClick={(e) => scrollToSection(e, link.href)}
-              className={`px-4 py-2 rounded-full text-sm font-semibold transition-all duration-300 ${
-                activeSection === link.href
-                  ? 'text-accent-blue bg-accent-blue/10'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
-              }`}
-            >
-              {link.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Right Actions */}
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={toggleTheme} className="rounded-full">
-            {resolvedTheme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-          </Button>
-          
-          <Button
-            className="hidden sm:flex bg-foreground text-background hover:bg-accent-blue rounded-full px-6 font-semibold transition-all duration-300 active:scale-95"
-            onClick={(e) => scrollToSection(e, 'contact')}
+          {/* RESTORED PREMIUM LOGO - High Contrast Black/White */}
+          <a 
+            href="/" 
+            className="group flex items-center font-bold text-xl tracking-tight transition-opacity duration-300 hover:opacity-80"
+            aria-label="Home"
           >
-            Hire Me
-          </Button>
+            <span className="bg-foreground text-background px-3 py-1.5 rounded-l-lg transition-colors shadow-sm">
+              KP
+            </span>
+            <span className="border-2 border-l-0 border-foreground text-foreground px-3 py-1 rounded-r-lg transition-colors shadow-sm bg-background/50 backdrop-blur-sm">
+              Espino
+            </span>
+          </a>
 
-          {/* Mobile Menu */}
-          <Sheet open={isOpen} onOpenChange={setIsOpen}>
-            <SheetTrigger asChild className="md:hidden">
-              <Button variant="ghost" size="icon" className="rounded-xl">
-                <Menu className="h-6 w-6" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="right" className="bg-background/95 backdrop-blur-xl z-[150]">
-              <nav className="flex flex-col gap-4 mt-12">
-                {navLinks.map((link) => (
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex items-center gap-1">
+            {navLinks.map((link) => (
+              <button
+                key={link.href}
+                onClick={(e) => scrollToSection(e, link.href)}
+                className={`px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200 ${
+                  activeSection === link.href
+                    ? 'text-sky-500 bg-sky-500/10'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
+                }`}
+              >
+                {link.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Right Actions */}
+          <div className="flex items-center gap-3">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={toggleTheme} 
+              className="rounded-full hover:bg-foreground/5 transition-colors"
+            >
+              {resolvedTheme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+            </Button>
+            
+            <Button
+              className="hidden sm:flex bg-foreground text-background hover:bg-sky-500 hover:text-white rounded-full px-6 font-semibold transition-all duration-300 active:scale-95 shadow-sm"
+              onClick={(e) => scrollToSection(e, 'contact')}
+            >
+              Hire Me
+            </Button>
+
+            {/* Mobile Menu */}
+            <Sheet open={isOpen} onOpenChange={setIsOpen}>
+              <SheetTrigger asChild className="md:hidden">
+                <Button variant="ghost" size="icon" className="rounded-xl hover:bg-foreground/5">
+                  <Menu className="h-6 w-6" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="bg-background/95 backdrop-blur-xl z-[150] border-l-border">
+                <nav className="flex flex-col gap-4 mt-12">
+                  {navLinks.map((link) => (
+                    <button
+                      key={link.href}
+                      onClick={(e) => scrollToSection(e, link.href)}
+                      className={`text-left text-lg font-bold p-4 rounded-xl transition-colors duration-200 ${
+                        activeSection === link.href 
+                          ? 'bg-sky-500/10 text-sky-500' 
+                          : 'text-foreground/70 hover:bg-foreground/5 hover:text-foreground'
+                      }`}
+                    >
+                      {link.label}
+                    </button>
+                  ))}
                   <button
-                    key={link.href}
-                    onClick={(e) => scrollToSection(e, link.href)}
-                    className={`text-left text-lg font-bold p-4 rounded-xl transition-colors ${
-                      activeSection === link.href ? 'bg-accent-blue/10 text-accent-blue' : 'text-foreground/70'
+                    onClick={(e) => scrollToSection(e, 'contact')}
+                    className={`text-left text-lg font-bold p-4 rounded-xl transition-colors duration-200 ${
+                      activeSection === 'contact' 
+                        ? 'bg-sky-500 text-white' 
+                        : 'bg-foreground text-background hover:bg-sky-500 hover:text-white'
                     }`}
                   >
-                    {link.label}
+                    Hire Me
                   </button>
-                ))}
-              </nav>
-            </SheetContent>
-          </Sheet>
-        </div>
-      </motion.nav>
+                </nav>
+              </SheetContent>
+            </Sheet>
+          </div>
+        </motion.nav>
+      </div>
     </header>
   );
 }

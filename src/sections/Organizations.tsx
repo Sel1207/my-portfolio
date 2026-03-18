@@ -49,31 +49,64 @@ const organizations: Organization[] = [
 
 export function Organizations() {
   return (
-    <section id="organizations" className="relative py-24 lg:py-32 bg-slate-950 overflow-hidden text-slate-300">
+    <section 
+      id="organizations" 
+      // THE FIX: Added min-h-screen flex flex-col justify-center so the Nav Observer catches it perfectly
+      className="relative py-24 lg:py-32 min-h-screen flex flex-col justify-center bg-slate-950 overflow-hidden text-slate-300"
+    >
       
-      {/* Premium Background Effects */}
+      {/* Minimalist Background Effects */}
       <div 
-        className="absolute inset-0 opacity-20 pointer-events-none" 
+        className="absolute inset-0 opacity-10 pointer-events-none" 
         style={{ 
-          backgroundImage: 'linear-gradient(rgba(148, 163, 184, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(148, 163, 184, 0.1) 1px, transparent 1px)', 
+          backgroundImage: 'linear-gradient(rgba(148, 163, 184, 0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(148, 163, 184, 0.2) 1px, transparent 1px)', 
           backgroundSize: '40px 40px' 
         }} 
       />
       <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-sky-500/10 rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-blue-500/10 rounded-full blur-[120px] pointer-events-none" />
 
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 z-10">
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 z-10 w-full">
         
-        {/* Section Header */}
+        {/* Section Header (Upgraded to match Uniform Aesthetic) */}
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           className="text-center max-w-2xl mx-auto mb-16"
         >
-          <p className="text-sky-400 font-semibold mb-2 uppercase tracking-wider text-sm">Extracurricular</p>
-          <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">Organizations</h2>
-          <div className="w-20 h-1.5 bg-gradient-to-r from-sky-400 to-blue-500 rounded-full mx-auto mb-6 shadow-[0_0_15px_rgba(56,189,248,0.5)]" />
+          {/* Uniform Shimmer Badge */}
+          <motion.div whileHover={{ scale: 1.05 }} className="inline-block mb-4 cursor-default">
+            <div className="relative overflow-hidden inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-sky-500/10 border border-sky-500/20">
+              <span className="w-2 h-2 rounded-full bg-sky-500 animate-pulse relative z-10" />
+              <span className="text-sky-400 text-xs font-bold uppercase tracking-widest relative z-10">Extracurricular</span>
+              <motion.div 
+                className="absolute top-0 bottom-0 w-1/2 bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-12 z-0"
+                animate={{ left: ['-100%', '200%'] }}
+                transition={{ duration: 1.5, repeat: Infinity, repeatDelay: 3.5, ease: "easeInOut" }}
+              />
+            </div>
+          </motion.div>
+
+          {/* Uniform Gradient Header */}
+          <h2 className="text-4xl md:text-5xl font-bold text-white mb-4 tracking-tight">
+            Professional{' '}
+            <motion.span 
+              className="inline-block"
+              animate={{ backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"] }}
+              transition={{ duration: 4, ease: "easeInOut", repeat: Infinity }}
+              style={{
+                backgroundImage: "linear-gradient(135deg, rgb(14, 165, 233), rgb(59, 130, 246), rgb(139, 92, 246), rgb(14, 165, 233))",
+                backgroundSize: "300% 300%",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
+                color: "transparent",
+              }}
+            >
+              Organizations
+            </motion.span>
+          </h2>
           <p className="text-slate-400 text-lg">
             Active member and officer of various academic and professional organizations, fostering leadership and networking in the engineering community.
           </p>
@@ -95,7 +128,7 @@ export function Organizations() {
               
               <div className="relative z-10 flex flex-col flex-grow">
                 {/* Icon */}
-                <div className="w-12 h-12 rounded-xl bg-slate-800 flex items-center justify-center mb-5 border border-slate-700 group-hover:bg-sky-500/20 group-hover:border-sky-500/30 transition-colors">
+                <div className="w-12 h-12 rounded-xl bg-slate-800 flex items-center justify-center mb-5 border border-slate-700 group-hover:bg-sky-500/20 group-hover:border-sky-500/30 transition-colors shadow-sm">
                   <org.icon className="h-6 w-6 text-sky-400" />
                 </div>
 
@@ -103,15 +136,15 @@ export function Organizations() {
                 <h3 className="font-bold text-white mb-3 leading-snug pr-4">{org.name}</h3>
                 
                 <div className="flex flex-wrap items-center gap-2 mb-4">
-                  <span className={`text-xs font-bold px-3 py-1 rounded-full border ${
+                  <span className={`text-[10px] uppercase tracking-wider font-bold px-3 py-1 rounded-md border ${
                     org.role === 'Officer' 
                       ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' 
                       : 'bg-sky-500/10 text-sky-400 border-sky-500/20'
                   }`}>
                     {org.role}
                   </span>
-                  <div className="flex items-center gap-1.5 text-xs text-slate-400 bg-slate-800/80 px-3 py-1 rounded-full border border-slate-700/50">
-                    <Calendar className="h-3.5 w-3.5 text-slate-500" />
+                  <div className="flex items-center gap-1.5 text-[11px] font-medium text-slate-400 bg-slate-800/80 px-2.5 py-1 rounded-md border border-slate-700/50">
+                    <Calendar className="h-3 w-3 text-slate-500" />
                     {org.period}
                   </div>
                 </div>
@@ -142,7 +175,7 @@ export function Organizations() {
               <div className="text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-blue-500 mb-2 group-hover:scale-110 transition-transform duration-300">
                 {stat.value}
               </div>
-              <div className="text-sm font-medium text-slate-400 uppercase tracking-wider">{stat.label}</div>
+              <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">{stat.label}</div>
             </div>
           ))}
         </motion.div>

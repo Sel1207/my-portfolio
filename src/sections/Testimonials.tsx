@@ -50,32 +50,32 @@ const testimonials: Testimonial[] = [
 ];
 
 export function Testimonials() {
-  const { ref: sectionRef, isRevealed } = useScrollReveal<HTMLElement>();
+  const { ref: sectionRef } = useScrollReveal<HTMLElement>();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
 
+  // SMART AUTO-PLAY LOGIC
   useEffect(() => {
     if (!isAutoPlaying) return;
 
     const interval = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % testimonials.length);
-    }, 5000);
+    }, 5000); // Auto-slides every 5 seconds
 
+    // Adding currentIndex to the dependency array ensures the timer resets 
+    // when the user manually clicks next/prev, giving them a full 5 seconds to read.
     return () => clearInterval(interval);
-  }, [isAutoPlaying]);
+  }, [isAutoPlaying, currentIndex]);
 
   const goToPrevious = () => {
-    setIsAutoPlaying(false);
     setCurrentIndex((prev) => (prev - 1 + testimonials.length) % testimonials.length);
   };
 
   const goToNext = () => {
-    setIsAutoPlaying(false);
     setCurrentIndex((prev) => (prev + 1) % testimonials.length);
   };
 
   const goToSlide = (index: number) => {
-    setIsAutoPlaying(false);
     setCurrentIndex(index);
   };
 
@@ -87,16 +87,16 @@ export function Testimonials() {
       ref={sectionRef}
       className="relative py-24 lg:py-32 bg-slate-950 overflow-hidden text-slate-300"
     >
-      {/* Premium Background Effects */}
+      {/* Minimalist Background Effects (Permanently Dark) */}
       <div 
-        className="absolute inset-0 opacity-20 pointer-events-none" 
+        className="absolute inset-0 opacity-10 pointer-events-none" 
         style={{ 
-          backgroundImage: 'linear-gradient(rgba(148, 163, 184, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(148, 163, 184, 0.1) 1px, transparent 1px)', 
+          backgroundImage: 'linear-gradient(rgba(148, 163, 184, 0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(148, 163, 184, 0.2) 1px, transparent 1px)', 
           backgroundSize: '40px 40px' 
         }} 
       />
-      <div className="absolute top-1/4 left-0 w-[500px] h-[500px] bg-sky-500/10 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-1/4 right-0 w-[500px] h-[500px] bg-blue-500/10 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute top-1/4 left-0 w-[500px] h-[500px] bg-sky-500/5 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-1/4 right-0 w-[500px] h-[500px] bg-blue-500/5 rounded-full blur-[120px] pointer-events-none" />
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 z-10">
         
@@ -107,13 +107,38 @@ export function Testimonials() {
           viewport={{ once: true }}
           className="text-center max-w-2xl mx-auto mb-16"
         >
-          <span className="text-sky-400 font-semibold mb-2 uppercase tracking-wider text-sm">
-            Testimonials
-          </span>
-          <h2 className="text-4xl md:text-5xl font-bold text-white mb-6 mt-2">
-            What Others Say
+          {/* Uniform Shimmer Badge */}
+          <motion.div whileHover={{ scale: 1.05 }} className="inline-block mb-4 cursor-default">
+            <div className="relative overflow-hidden inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-sky-500/10 border border-sky-500/20">
+              <span className="w-2 h-2 rounded-full bg-sky-500 animate-pulse relative z-10" />
+              <span className="text-sky-400 text-xs font-bold uppercase tracking-widest relative z-10">Testimonials</span>
+              <motion.div 
+                className="absolute top-0 bottom-0 w-1/2 bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-12 z-0"
+                animate={{ left: ['-100%', '200%'] }}
+                transition={{ duration: 1.5, repeat: Infinity, repeatDelay: 3.5, ease: "easeInOut" }}
+              />
+            </div>
+          </motion.div>
+
+          {/* Uniform Gradient Header */}
+          <h2 className="text-4xl md:text-5xl font-bold text-white mb-4 tracking-tight">
+            What Others{' '}
+            <motion.span 
+              className="inline-block"
+              animate={{ backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"] }}
+              transition={{ duration: 4, ease: "easeInOut", repeat: Infinity }}
+              style={{
+                backgroundImage: "linear-gradient(135deg, rgb(14, 165, 233), rgb(59, 130, 246), rgb(139, 92, 246), rgb(14, 165, 233))",
+                backgroundSize: "300% 300%",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
+                color: "transparent",
+              }}
+            >
+              Say
+            </motion.span>
           </h2>
-          <div className="w-20 h-1.5 bg-gradient-to-r from-sky-400 to-blue-500 rounded-full mx-auto mb-6 shadow-[0_0_15px_rgba(56,189,248,0.5)]" />
           <p className="text-slate-400 text-lg">
             Feedback from professors, mentors, and colleagues who have worked with me.
           </p>
@@ -127,7 +152,12 @@ export function Testimonials() {
           transition={{ delay: 0.2 }}
           className="max-w-4xl mx-auto"
         >
-          <div className="relative bg-slate-900/80 backdrop-blur-sm rounded-3xl p-8 lg:p-12 border border-slate-700/50 shadow-[0_8px_30px_rgb(14,165,233,0.1)]">
+          {/* PAUSE ON HOVER LOGIC APPLIED HERE */}
+          <div 
+            className="relative bg-slate-900/80 backdrop-blur-sm rounded-3xl p-8 lg:p-12 border border-slate-700/50 shadow-[0_8px_30px_rgba(14,165,233,0.05)]"
+            onMouseEnter={() => setIsAutoPlaying(false)}
+            onMouseLeave={() => setIsAutoPlaying(true)}
+          >
             
             {/* Top Glowing Accent Line */}
             <div className="absolute top-0 left-10 right-10 h-[2px] bg-gradient-to-r from-transparent via-sky-500/50 to-transparent" />
@@ -181,12 +211,12 @@ export function Testimonials() {
                   >
                     {/* Avatar placeholder */}
                     <div className="w-14 h-14 rounded-full bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400 font-bold text-xl shadow-[0_0_15px_rgba(56,189,248,0.15)]">
-                      {currentTestimonial.name.split(' ').map(n => n[0]).join('')}
+                      {currentTestimonial.name === 'N/A' ? 'NA' : currentTestimonial.name.substring(0, 2).toUpperCase()}
                     </div>
                     <div>
-                      <div className="font-semibold text-white">{currentTestimonial.name}</div>
+                      <div className="font-bold text-white">{currentTestimonial.name}</div>
                       <div className="text-sm text-slate-400">{currentTestimonial.role}</div>
-                      <div className="text-sm font-medium text-sky-400">{currentTestimonial.organization}</div>
+                      <div className="text-sm font-semibold text-sky-400">{currentTestimonial.organization}</div>
                     </div>
                   </motion.div>
                 </AnimatePresence>

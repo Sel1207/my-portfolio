@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -14,7 +14,9 @@ import {
   Cpu, 
   LineChart, 
   Volume2, 
-  CircuitBoard 
+  CircuitBoard,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 
 // --- 3D TILT CARD WRAPPER ---
@@ -40,11 +42,29 @@ function TiltCard({ children, onClick }: { children: React.ReactNode; onClick: (
       onMouseLeave={() => { x.set(0); y.set(0); }}
       onClick={onClick}
       style={{ rotateY, rotateX, transformStyle: "preserve-3d" }}
-      className="relative group bg-slate-900 rounded-xl overflow-hidden border border-slate-700/50 hover:border-sky-500/50 transition-colors duration-500 cursor-pointer shadow-lg h-full"
+      className="relative group bg-slate-900 rounded-xl overflow-visible border border-slate-700/50 hover:border-sky-500/50 transition-colors duration-500 cursor-pointer shadow-lg h-full"
     >
-      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-sky-400 to-blue-500 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left z-20" />
-      <div className="absolute inset-0 bg-gradient-to-br from-sky-500/5 to-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-10 pointer-events-none" />
-      <div style={{ transform: "translateZ(30px)" }} className="relative z-20 h-full flex flex-col">
+      {/* CIRCUIT NODE PINS (Left and Right) */}
+      <div className="absolute top-1/2 -left-1.5 w-3 h-3 rounded-full bg-slate-950 border-2 border-slate-700 group-hover:bg-sky-400 group-hover:border-sky-300 group-hover:shadow-[0_0_12px_#38bdf8] transition-all duration-300 z-30 transform -translate-y-1/2" />
+      <div className="absolute top-1/2 -right-1.5 w-3 h-3 rounded-full bg-slate-950 border-2 border-slate-700 group-hover:bg-sky-400 group-hover:border-sky-300 group-hover:shadow-[0_0_12px_#38bdf8] transition-all duration-300 z-30 transform -translate-y-1/2" />
+
+      <div className="absolute top-0 left-0 w-full h-1 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left z-20 rounded-t-xl overflow-hidden">
+        <motion.div 
+          className="w-full h-full"
+          animate={{ backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"] }}
+          transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+          style={{
+            backgroundImage: "linear-gradient(135deg, rgb(14, 165, 233), rgb(59, 130, 246), rgb(139, 92, 246), rgb(14, 165, 233))",
+            backgroundSize: "300% 300%",
+          }}
+        />
+      </div>
+
+      <div className="absolute inset-0 rounded-xl overflow-hidden pointer-events-none">
+        <div className="absolute inset-0 bg-gradient-to-br from-sky-500/5 to-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-10" />
+      </div>
+
+      <div style={{ transform: "translateZ(30px)" }} className="relative z-20 h-full flex flex-col rounded-xl overflow-hidden">
         {children}
       </div>
     </motion.div>
@@ -127,23 +147,64 @@ const projects = [
   },
 ];
 
+// We create a massive duplicated array so the user can click left/right 30 times instantly without running out of cards.
+const INFINITE_PROJECTS = [
+  ...projects, ...projects, ...projects, ...projects, ...projects, ...projects,
+  ...projects, ...projects, ...projects, ...projects, ...projects
+];
+
 export function Projects() {
   const [selectedProject, setSelectedProject] = useState<typeof projects[0] | null>(null);
+  const [itemsPerPage, setItemsPerPage] = useState(3);
+  
+  // We start perfectly in the middle of our massive array (5 sets deep, 5 * 6 = 30)
+  // This means the user has 30 cards to the left, and 30 cards to the right to swipe through.
+  const [startIndex, setStartIndex] = useState(30);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 768) setItemsPerPage(1);
+      else if (window.innerWidth < 1024) setItemsPerPage(2);
+      else setItemsPerPage(3);
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const next = () => setStartIndex((prev) => prev + 1);
+  const prev = () => setStartIndex((prev) => prev - 1);
 
   return (
-    <section id="projects" className="relative py-24 lg:py-32 bg-slate-950 overflow-hidden text-slate-300">
+    <section id="projects" className="relative py-24 lg:py-32 min-h-screen flex flex-col justify-center bg-slate-950 overflow-hidden text-slate-300">
       
-      {/* Background Effects */}
+      {/* --- CIRCUIT BOARD BACKGROUND EFFECTS --- */}
       <div 
-        className="absolute inset-0 opacity-20 pointer-events-none" 
+        className="absolute inset-0 opacity-10 pointer-events-none" 
         style={{ 
-          backgroundImage: 'linear-gradient(rgba(148, 163, 184, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(148, 163, 184, 0.1) 1px, transparent 1px)', 
+          backgroundImage: 'linear-gradient(rgba(148, 163, 184, 0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(148, 163, 184, 0.2) 1px, transparent 1px)', 
           backgroundSize: '40px 40px' 
         }} 
       />
-      <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-sky-500/10 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-sky-500/10 rounded-full blur-[150px] pointer-events-none" />
 
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 z-10">
+      <motion.div 
+        className="absolute top-0 left-[20%] w-[1px] h-full bg-gradient-to-b from-transparent via-sky-400/80 to-transparent shadow-[0_0_10px_#38bdf8]"
+        animate={{ y: ['-100%', '100%'] }}
+        transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+      />
+      <motion.div 
+        className="absolute top-0 right-[25%] w-[1px] h-full bg-gradient-to-b from-transparent via-blue-500/80 to-transparent shadow-[0_0_10px_#3b82f6]"
+        animate={{ y: ['-100%', '100%'] }}
+        transition={{ duration: 6, repeat: Infinity, ease: "linear", delay: 2 }}
+      />
+      <motion.div 
+        className="absolute top-[30%] left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-sky-400/50 to-transparent shadow-[0_0_10px_#38bdf8]"
+        animate={{ x: ['-100%', '100%'] }}
+        transition={{ duration: 7, repeat: Infinity, ease: "linear", delay: 1 }}
+      />
+
+      <div className="relative max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 z-10">
         
         {/* Section Header */}
         <motion.div 
@@ -152,84 +213,136 @@ export function Projects() {
           viewport={{ once: true }}
           className="text-center max-w-2xl mx-auto mb-16"
         >
-          <p className="text-sky-400 font-semibold mb-2 uppercase tracking-wider text-sm">My Work</p>
-          <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">Selected Projects</h2>
-          <div className="w-20 h-1.5 bg-gradient-to-r from-sky-400 to-blue-500 rounded-full mx-auto shadow-[0_0_15px_rgba(56,189,248,0.5)]" />
+          <motion.div whileHover={{ scale: 1.05 }} className="inline-block mb-4 cursor-default">
+            <div className="relative overflow-hidden inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-sky-500/10 border border-sky-500/20">
+              <span className="w-2 h-2 rounded-full bg-sky-500 animate-pulse relative z-10" />
+              <span className="text-sky-400 text-xs font-bold uppercase tracking-widest relative z-10">My Work</span>
+              <motion.div 
+                className="absolute top-0 bottom-0 w-1/2 bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-12 z-0"
+                animate={{ left: ['-100%', '200%'] }}
+                transition={{ duration: 1.5, repeat: Infinity, repeatDelay: 3.5, ease: "easeInOut" }}
+              />
+            </div>
+          </motion.div>
+
+          <h2 className="text-4xl md:text-5xl font-bold text-white tracking-tight mb-6">Selected Projects</h2>
+          
+          <motion.div 
+            className="w-20 h-1.5 rounded-full mx-auto"
+            animate={{ backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"] }}
+            transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+            style={{
+              backgroundImage: "linear-gradient(135deg, rgb(14, 165, 233), rgb(59, 130, 246), rgb(139, 92, 246), rgb(14, 165, 233))",
+              backgroundSize: "300% 300%",
+            }}
+          />
         </motion.div>
 
-        {/* --- 3-COLUMN GRID --- */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {projects.map((project, index) => (
-            <motion.div
-              key={project.id}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: index * 0.1 }}
+        {/* --- CAROUSEL WRAPPER --- */}
+        <div className="relative mt-12 w-full">
+          
+          {/* Nav Buttons (Restored to perfectly hover over the blurred edges) */}
+          <button
+            onClick={prev}
+            className="absolute top-1/2 -left-2 md:-left-6 lg:-left-12 -translate-y-1/2 w-12 h-12 bg-slate-900 border border-slate-700 rounded-full flex items-center justify-center text-sky-400 z-40 hover:bg-slate-800 active:scale-90 transition-all duration-300 shadow-[0_0_15px_rgba(0,0,0,0.5)]"
+          >
+            <ChevronLeft className="w-6 h-6" />
+          </button>
+          
+          <button
+            onClick={next}
+            className="absolute top-1/2 -right-2 md:-right-6 lg:-right-12 -translate-y-1/2 w-12 h-12 bg-slate-900 border border-slate-700 rounded-full flex items-center justify-center text-sky-400 z-40 hover:bg-slate-800 active:scale-90 transition-all duration-300 shadow-[0_0_15px_rgba(0,0,0,0.5)]"
+          >
+            <ChevronRight className="w-6 h-6" />
+          </button>
+
+          {/* THE FIX: overflow-visible restored so the blurred edges bleed into the margins beautifully */}
+          <div className="overflow-visible w-full">
+            <motion.div 
+              className="flex items-stretch"
+              animate={{ x: `-${startIndex * (100 / itemsPerPage)}%` }}
+              transition={{ type: "spring", stiffness: 250, damping: 30 }}
             >
-              <TiltCard onClick={() => setSelectedProject(project)}>
+              {INFINITE_PROJECTS.map((project, index) => {
                 
-                {/* Visual Header */}
-                <div className="relative h-40 overflow-hidden bg-slate-800">
-                  <img src={project.image} alt={project.title} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 group-hover:scale-110 transition-all duration-700" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent" />
-                  <Badge className="absolute top-4 right-4 z-20 bg-sky-500/20 text-sky-400 border-sky-500/30 backdrop-blur-md uppercase text-[9px] font-bold">
-                    {project.title}
-                  </Badge>
-                </div>
+                // Logic to blur out the edges and hide items completely off screen
+                const isVisible = index >= startIndex && index < startIndex + itemsPerPage;
+                const isEdge = index === startIndex - 1 || index === startIndex + itemsPerPage;
+                
+                return (
+                  <motion.div
+                    key={`${project.id}-${index}`}
+                    // Restored original exact widths
+                    className="w-full md:w-1/2 lg:w-1/3 flex-shrink-0 px-3 md:px-4 py-4"
+                    animate={{
+                      opacity: isVisible ? 1 : (isEdge ? 0.3 : 0),
+                      filter: isVisible ? 'blur(0px)' : (isEdge ? 'blur(6px)' : 'blur(10px)'),
+                      scale: isVisible ? 1 : 0.85,
+                      pointerEvents: isVisible ? 'auto' : 'none',
+                    }}
+                    transition={{ duration: 0.5, ease: "easeInOut" }}
+                  >
+                    <TiltCard onClick={() => { if(isVisible) setSelectedProject(project); }}>
+                      <div className="relative h-44 overflow-hidden bg-slate-800">
+                        <img src={project.image} alt={project.title} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 group-hover:scale-110 transition-all duration-700" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent" />
+                        <Badge className="absolute top-4 right-4 z-20 bg-sky-500/20 text-sky-400 border-sky-500/30 backdrop-blur-md uppercase text-[9px] font-bold">
+                          {project.title}
+                        </Badge>
+                      </div>
 
-                {/* Content */}
-                <div className="p-6 bg-slate-900 flex-grow flex flex-col">
-                  <div className="w-10 h-10 bg-slate-800 rounded-lg flex items-center justify-center border border-slate-700 group-hover:bg-sky-500/20 group-hover:border-sky-500/30 transition-colors mb-4">
-                    <project.icon className="w-5 h-5 text-sky-400" />
-                  </div>
-                  
-                  <h3 className="text-lg font-bold text-white mb-2 group-hover:text-sky-400 transition-colors line-clamp-1">
-                    {project.subtitle}
-                  </h3>
-                  
-                  <p className="text-xs text-slate-400 leading-relaxed mb-6 line-clamp-3">
-                    {project.description}
-                  </p>
-                  
-                  {/* Tags */}
-                  <div className="flex flex-wrap gap-1.5 mb-6">
-                    {project.tags.map((tag) => (
-                      <span key={tag} className="px-2 py-0.5 bg-slate-800 text-slate-400 text-[9px] uppercase font-bold tracking-wider rounded border border-slate-700">
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
+                      <div className="p-6 bg-slate-900 flex-grow flex flex-col">
+                        <div className="w-10 h-10 bg-slate-800 rounded-lg flex items-center justify-center border border-slate-700 group-hover:bg-sky-500/20 group-hover:border-sky-500/30 transition-colors mb-4 shadow-inner">
+                          <project.icon className="w-5 h-5 text-sky-400" />
+                        </div>
+                        
+                        <h3 className="text-xl font-bold text-white mb-2 group-hover:text-sky-400 transition-colors line-clamp-1">
+                          {project.subtitle}
+                        </h3>
+                        
+                        <p className="text-xs text-slate-400 leading-relaxed mb-6 line-clamp-3">
+                          {project.description}
+                        </p>
+                        
+                        <div className="flex flex-wrap gap-1.5 mb-6">
+                          {project.tags.map((tag) => (
+                            <span key={tag} className="px-2 py-0.5 bg-slate-800 text-slate-400 text-[9px] uppercase font-bold tracking-wider rounded border border-slate-700">
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
 
-                  {/* Button */}
-                  <div className="flex items-center gap-2 text-sky-400 font-bold text-xs group/btn mt-auto">
-                    Explore Concept
-                    <ExternalLink className="w-3.5 h-3.5 transform group-hover/btn:translate-x-1 transition-transform" />
-                  </div>
-                </div>
-              </TiltCard>
+                        <div className="flex items-center gap-2 text-sky-400 font-bold text-xs group/btn mt-auto w-fit">
+                          Explore Concept
+                          <ExternalLink className="w-3.5 h-3.5 transform group-hover/btn:translate-x-1 group-hover/btn:-translate-y-0.5 transition-transform" />
+                        </div>
+                      </div>
+                    </TiltCard>
+                  </motion.div>
+                );
+              })}
             </motion.div>
-          ))}
+          </div>
         </div>
       </div>
 
-      {/* --- MODAL --- */}
+      {/* --- MODAL (Strictly Dark Mode) --- */}
       <Dialog open={!!selectedProject} onOpenChange={() => setSelectedProject(null)}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-slate-900 border-slate-700 text-white">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-slate-900 border-slate-700 text-white shadow-[0_0_50px_rgba(0,0,0,0.5)]">
           {selectedProject && (
             <div className="animate-in fade-in zoom-in duration-300">
-              <div className="relative h-64 -mx-6 -mt-6 mb-6 overflow-hidden">
-                <img src={selectedProject.image} alt={selectedProject.subtitle} className="w-full h-full object-cover opacity-80" />
+              <div className="relative h-64 -mx-6 -mt-6 mb-6 overflow-hidden bg-slate-800">
+                <img src={selectedProject.image} alt={selectedProject.subtitle} className="w-full h-full object-cover opacity-70" />
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent" />
-                <div className="absolute bottom-4 left-6">
-                  <Badge className="mb-2 bg-sky-500 text-white border-none">{selectedProject.title}</Badge>
-                  <h2 className="text-3xl font-bold text-white">{selectedProject.subtitle}</h2>
+                <div className="absolute bottom-4 left-6 z-10">
+                  <Badge className="mb-2 bg-sky-500 hover:bg-sky-600 text-white border-none shadow-sm">{selectedProject.title}</Badge>
+                  <h2 className="text-2xl md:text-3xl font-bold text-white">{selectedProject.subtitle}</h2>
                 </div>
               </div>
 
               <div className="space-y-6">
                 <DialogHeader>
-                  <DialogDescription className="text-lg text-slate-400 leading-relaxed text-left">
+                  <DialogDescription className="text-base md:text-lg text-slate-300 leading-relaxed text-left">
                     {selectedProject.fullDescription}
                   </DialogDescription>
                 </DialogHeader>
@@ -241,7 +354,7 @@ export function Projects() {
                   <ul className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {selectedProject.features.map((f, i) => (
                       <li key={i} className="text-sm text-slate-400 flex items-start gap-2">
-                        <div className="w-1.5 h-1.5 rounded-full bg-sky-400 mt-1.5 flex-shrink-0" /> 
+                        <div className="w-1.5 h-1.5 rounded-full bg-sky-400 mt-1.5 flex-shrink-0 shadow-[0_0_5px_#38bdf8]" /> 
                         {f}
                       </li>
                     ))}
@@ -252,7 +365,7 @@ export function Projects() {
                   <h4 className="font-bold text-white mb-3 uppercase tracking-widest text-xs text-sky-400">Technologies</h4>
                   <div className="flex flex-wrap gap-2">
                     {selectedProject.technologies.map(t => (
-                      <Badge key={t} variant="outline" className="border-sky-500/30 text-sky-400 bg-sky-500/5">
+                      <Badge key={t} variant="outline" className="border-sky-500/30 text-sky-400 bg-sky-500/10 hover:bg-sky-500/20 transition-colors">
                         {t}
                       </Badge>
                     ))}

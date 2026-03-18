@@ -82,11 +82,38 @@ function ProgressBar({ level, delay }: { level: number; delay: number }) {
 
 export function Skills() {
   return (
-    <section id="skills" className="py-24 lg:py-32 relative bg-background overflow-hidden">
+    <section id="skills" className="py-24 lg:py-32 relative bg-background overflow-hidden transition-colors duration-300">
       
+      {/* --- CONTINUOUS CIRCUIT BOARD BACKGROUND EFFECTS --- */}
+      {/* Subtle Grid Pattern (Adapts to Light/Dark Mode) */}
+      <div 
+        className="absolute inset-0 opacity-[0.03] dark:opacity-10 pointer-events-none transition-opacity" 
+        style={{ 
+          backgroundImage: 'linear-gradient(rgba(148, 163, 184, 0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(148, 163, 184, 0.5) 1px, transparent 1px)', 
+          backgroundSize: '40px 40px' 
+        }} 
+      />
+
       {/* Ambient Background Lighting */}
       <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-accent-blue/5 rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-purple-500/5 rounded-full blur-[100px] pointer-events-none" />
+
+      {/* Animated "Current" Traces (Connected perfectly to the Projects section layout) */}
+      <motion.div 
+        className="absolute top-0 left-[20%] w-[1px] h-full bg-gradient-to-b from-transparent via-sky-500/30 dark:via-sky-400/80 to-transparent shadow-[0_0_10px_rgba(56,189,248,0.2)] dark:shadow-[0_0_10px_#38bdf8]"
+        animate={{ y: ['-100%', '100%'] }}
+        transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+      />
+      <motion.div 
+        className="absolute top-0 right-[25%] w-[1px] h-full bg-gradient-to-b from-transparent via-blue-500/30 dark:via-blue-500/80 to-transparent shadow-[0_0_10px_rgba(59,130,246,0.2)] dark:shadow-[0_0_10px_#3b82f6]"
+        animate={{ y: ['-100%', '100%'] }}
+        transition={{ duration: 6, repeat: Infinity, ease: "linear", delay: 2 }}
+      />
+      <motion.div 
+        className="absolute top-[30%] left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-sky-500/20 dark:via-sky-400/50 to-transparent shadow-[0_0_10px_rgba(56,189,248,0.2)] dark:shadow-[0_0_10px_#38bdf8]"
+        animate={{ x: ['-100%', '100%'] }}
+        transition={{ duration: 7, repeat: Infinity, ease: "linear", delay: 1 }}
+      />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         
@@ -102,11 +129,11 @@ export function Skills() {
             whileHover={{ scale: 1.05 }} 
             className="inline-block mb-4 cursor-default"
           >
-            <div className="relative overflow-hidden inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-accent-blue/10 border border-accent-blue/20">
-              <span className="w-2 h-2 rounded-full bg-accent-blue animate-pulse relative z-10" />
-              <span className="text-accent-blue text-xs font-bold uppercase tracking-widest relative z-10">My Expertise</span>
+            <div className="relative overflow-hidden inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-sky-500/10 dark:bg-accent-blue/10 border border-sky-500/20 dark:border-accent-blue/20">
+              <span className="w-2 h-2 rounded-full bg-sky-500 dark:bg-accent-blue animate-pulse relative z-10" />
+              <span className="text-sky-600 dark:text-accent-blue text-xs font-bold uppercase tracking-widest relative z-10">My Expertise</span>
               <motion.div 
-                className="absolute top-0 bottom-0 w-1/2 bg-gradient-to-r from-transparent via-white/40 dark:via-white/20 to-transparent -skew-x-12 z-0"
+                className="absolute top-0 bottom-0 w-1/2 bg-gradient-to-r from-transparent via-sky-300/40 dark:via-white/20 to-transparent -skew-x-12 z-0"
                 animate={{ left: ['-100%', '200%'] }}
                 transition={{ duration: 1.5, repeat: Infinity, repeatDelay: 3.5, ease: "easeInOut" }}
               />
@@ -204,7 +231,7 @@ export function Skills() {
                     <span
                       className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full ${
                         item.status === 'Ongoing'
-                          ? 'bg-green-500/10 text-green-500 border border-green-500/20'
+                          ? 'bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20'
                           : item.status === 'In Progress'
                           ? 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border border-yellow-500/20'
                           : 'bg-accent-blue/10 text-accent-blue border border-accent-blue/20'
