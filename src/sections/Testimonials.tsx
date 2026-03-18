@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useScrollReveal } from '@/hooks/useScrollReveal';
+// 1. Connect to the global performance engine
+import { usePerformance } from '@/context/PerformanceContext'; 
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, Quote, Star } from 'lucide-react';
 
@@ -53,6 +55,9 @@ export function Testimonials() {
   const { ref: sectionRef } = useScrollReveal<HTMLElement>();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
+  
+  // 2. Destructure global state
+  const { isLowPower } = usePerformance();
 
   // SMART AUTO-PLAY LOGIC
   useEffect(() => {
@@ -62,8 +67,6 @@ export function Testimonials() {
       setCurrentIndex((prev) => (prev + 1) % testimonials.length);
     }, 5000); // Auto-slides every 5 seconds
 
-    // Adding currentIndex to the dependency array ensures the timer resets 
-    // when the user manually clicks next/prev, giving them a full 5 seconds to read.
     return () => clearInterval(interval);
   }, [isAutoPlaying, currentIndex]);
 
@@ -87,6 +90,11 @@ export function Testimonials() {
       ref={sectionRef}
       className="relative py-24 lg:py-32 bg-slate-950 overflow-hidden text-slate-300"
     >
+      {/* NATIVE CSS ANIMATION ENGINE (Seamless transitions without teleporting) */}
+      <style dangerouslySetInnerHTML={{__html: `
+        @keyframes bg-spin { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+      `}} />
+
       {/* Minimalist Background Effects (Permanently Dark) */}
       <div 
         className="absolute inset-0 opacity-10 pointer-events-none" 
@@ -95,8 +103,10 @@ export function Testimonials() {
           backgroundSize: '40px 40px' 
         }} 
       />
-      <div className="absolute top-1/4 left-0 w-[500px] h-[500px] bg-sky-500/5 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-1/4 right-0 w-[500px] h-[500px] bg-blue-500/5 rounded-full blur-[120px] pointer-events-none" />
+      
+      {/* BACKGROUND GLOWS: Smoothly dim and reduce blur radius in Performance Mode */}
+      <div className={`absolute top-1/4 left-0 w-[500px] h-[500px] rounded-full pointer-events-none transition-all duration-1000 ${isLowPower ? 'bg-sky-500/5 blur-[60px] opacity-40' : 'bg-sky-500/5 blur-[120px] opacity-100'}`} />
+      <div className={`absolute bottom-1/4 right-0 w-[500px] h-[500px] rounded-full pointer-events-none transition-all duration-1000 ${isLowPower ? 'bg-blue-500/5 blur-[60px] opacity-40' : 'bg-blue-500/5 blur-[120px] opacity-100'}`} />
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 z-10">
         
@@ -110,23 +120,25 @@ export function Testimonials() {
           {/* Uniform Shimmer Badge */}
           <motion.div whileHover={{ scale: 1.05 }} className="inline-block mb-4 cursor-default">
             <div className="relative overflow-hidden inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-sky-500/10 border border-sky-500/20">
-              <span className="w-2 h-2 rounded-full bg-sky-500 animate-pulse relative z-10" />
+              <span className={`w-2 h-2 rounded-full bg-sky-500 relative z-10 ${isLowPower ? '' : 'animate-pulse'}`} />
               <span className="text-sky-400 text-xs font-bold uppercase tracking-widest relative z-10">Testimonials</span>
-              <motion.div 
-                className="absolute top-0 bottom-0 w-1/2 bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-12 z-0"
-                animate={{ left: ['-100%', '200%'] }}
-                transition={{ duration: 1.5, repeat: Infinity, repeatDelay: 3.5, ease: "easeInOut" }}
-              />
+              
+              {/* FAST SHINE: 0.8s duration, cleanly removed in Performance Mode */}
+              {!isLowPower && (
+                <motion.div 
+                  className="absolute top-0 bottom-0 w-[150%] bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12 z-0"
+                  animate={{ left: ['-100%', '200%'] }}
+                  transition={{ duration: 0.8, repeat: Infinity, repeatDelay: 3.5, ease: "easeInOut" }}
+                />
+              )}
             </div>
           </motion.div>
 
           {/* Uniform Gradient Header */}
           <h2 className="text-4xl md:text-5xl font-bold text-white mb-4 tracking-tight">
             What Others{' '}
-            <motion.span 
+            <span 
               className="inline-block"
-              animate={{ backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"] }}
-              transition={{ duration: 4, ease: "easeInOut", repeat: Infinity }}
               style={{
                 backgroundImage: "linear-gradient(135deg, rgb(14, 165, 233), rgb(59, 130, 246), rgb(139, 92, 246), rgb(14, 165, 233))",
                 backgroundSize: "300% 300%",
@@ -134,10 +146,11 @@ export function Testimonials() {
                 WebkitTextFillColor: "transparent",
                 backgroundClip: "text",
                 color: "transparent",
+                animation: `bg-spin ${isLowPower ? 12 : 4}s linear infinite` // Native CSS deceleration
               }}
             >
               Say
-            </motion.span>
+            </span>
           </h2>
           <p className="text-slate-400 text-lg">
             Feedback from professors, mentors, and colleagues who have worked with me.

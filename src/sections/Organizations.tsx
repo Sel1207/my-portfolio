@@ -1,4 +1,6 @@
 import { motion } from 'framer-motion';
+// 1. Connect to the global performance engine
+import { usePerformance } from '@/context/PerformanceContext'; 
 import { Calendar, Award, Zap, BookOpen, Microscope, Globe } from 'lucide-react';
 
 interface Organization {
@@ -48,14 +50,21 @@ const organizations: Organization[] = [
 ];
 
 export function Organizations() {
+  // 2. Destructure global state
+  const { isLowPower } = usePerformance();
+
   return (
     <section 
       id="organizations" 
-      // THE FIX: Added min-h-screen flex flex-col justify-center so the Nav Observer catches it perfectly
       className="relative py-24 lg:py-32 min-h-screen flex flex-col justify-center bg-slate-950 overflow-hidden text-slate-300"
     >
-      
-      {/* Minimalist Background Effects */}
+      {/* NATIVE CSS ANIMATION ENGINE (Same smooth logic as Skills & Projects) */}
+      <style dangerouslySetInnerHTML={{__html: `
+        @keyframes bg-spin { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+        @keyframes slide-right { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+      `}} />
+
+      {/* Minimalist Background Grid Pattern */}
       <div 
         className="absolute inset-0 opacity-10 pointer-events-none" 
         style={{ 
@@ -63,12 +72,14 @@ export function Organizations() {
           backgroundSize: '40px 40px' 
         }} 
       />
-      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-sky-500/10 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-blue-500/10 rounded-full blur-[120px] pointer-events-none" />
+      
+      {/* BACKGROUND GLOWS: Smoothly dim and reduce blur radius in Performance Mode to save GPU rendering */}
+      <div className={`absolute top-0 right-0 w-[500px] h-[500px] rounded-full pointer-events-none transition-all duration-1000 ${isLowPower ? 'bg-sky-500/5 blur-[60px] opacity-40' : 'bg-sky-500/10 blur-[120px] opacity-100'}`} />
+      <div className={`absolute bottom-0 left-0 w-[500px] h-[500px] rounded-full pointer-events-none transition-all duration-1000 ${isLowPower ? 'bg-blue-500/5 blur-[60px] opacity-40' : 'bg-blue-500/10 blur-[120px] opacity-100'}`} />
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 z-10 w-full">
         
-        {/* Section Header (Upgraded to match Uniform Aesthetic) */}
+        {/* Section Header */}
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -78,23 +89,25 @@ export function Organizations() {
           {/* Uniform Shimmer Badge */}
           <motion.div whileHover={{ scale: 1.05 }} className="inline-block mb-4 cursor-default">
             <div className="relative overflow-hidden inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-sky-500/10 border border-sky-500/20">
-              <span className="w-2 h-2 rounded-full bg-sky-500 animate-pulse relative z-10" />
+              <span className={`w-2 h-2 rounded-full bg-sky-500 relative z-10 ${isLowPower ? '' : 'animate-pulse'}`} />
               <span className="text-sky-400 text-xs font-bold uppercase tracking-widest relative z-10">Extracurricular</span>
-              <motion.div 
-                className="absolute top-0 bottom-0 w-1/2 bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-12 z-0"
-                animate={{ left: ['-100%', '200%'] }}
-                transition={{ duration: 1.5, repeat: Infinity, repeatDelay: 3.5, ease: "easeInOut" }}
-              />
+              
+              {/* FAST SHINE: Cleanly disabled in Performance Mode to save render costs */}
+              {!isLowPower && (
+                <motion.div 
+                  className="absolute top-0 bottom-0 w-[150%] bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12 z-0"
+                  animate={{ left: ['-100%', '200%'] }}
+                  transition={{ duration: 0.8, repeat: Infinity, repeatDelay: 3.5, ease: "easeInOut" }}
+                />
+              )}
             </div>
           </motion.div>
 
           {/* Uniform Gradient Header */}
-          <h2 className="text-4xl md:text-5xl font-bold text-white mb-4 tracking-tight">
+          <h2 className="text-4xl md:text-5xl font-bold mb-4 tracking-tight">
             Professional{' '}
-            <motion.span 
+            <span 
               className="inline-block"
-              animate={{ backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"] }}
-              transition={{ duration: 4, ease: "easeInOut", repeat: Infinity }}
               style={{
                 backgroundImage: "linear-gradient(135deg, rgb(14, 165, 233), rgb(59, 130, 246), rgb(139, 92, 246), rgb(14, 165, 233))",
                 backgroundSize: "300% 300%",
@@ -102,10 +115,11 @@ export function Organizations() {
                 WebkitTextFillColor: "transparent",
                 backgroundClip: "text",
                 color: "transparent",
+                animation: `bg-spin ${isLowPower ? 12 : 4}s linear infinite` // Uses the native CSS engine deceleration
               }}
             >
               Organizations
-            </motion.span>
+            </span>
           </h2>
           <p className="text-slate-400 text-lg">
             Active member and officer of various academic and professional organizations, fostering leadership and networking in the engineering community.
@@ -121,10 +135,11 @@ export function Organizations() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: index * 0.1 }}
-              className="group relative bg-slate-900/80 backdrop-blur-sm rounded-2xl p-6 border border-slate-700/50 hover:border-sky-500/50 transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_8px_30px_rgb(14,165,233,0.1)] overflow-hidden flex flex-col h-full"
+              // PERFORMANCE MODE: Disables the heavy box-shadow and Y-translation on hover if low power is active
+              className={`group relative bg-slate-900/80 backdrop-blur-sm rounded-2xl p-6 border border-slate-700/50 hover:border-sky-500/50 transition-all duration-500 overflow-hidden flex flex-col h-full ${isLowPower ? '' : 'hover:-translate-y-1 hover:shadow-[0_8px_30px_rgb(14,165,233,0.1)]'}`}
             >
-              {/* Subtle hover gradient inside card */}
-              <div className="absolute inset-0 bg-gradient-to-br from-sky-500/5 to-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+              {/* Subtle hover gradient inside card - Completely hidden in Performance mode to prevent excess repaints */}
+              <div className={`absolute inset-0 bg-gradient-to-br from-sky-500/5 to-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none ${isLowPower ? 'hidden' : ''}`} />
               
               <div className="relative z-10 flex flex-col flex-grow">
                 {/* Icon */}
@@ -172,7 +187,8 @@ export function Organizations() {
             { value: "3", label: "Academic Orgs" },
           ].map((stat, i) => (
             <div key={i} className="text-center group">
-              <div className="text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-blue-500 mb-2 group-hover:scale-110 transition-transform duration-300">
+              {/* PERFORMANCE MODE: Disables scale transition on hover */}
+              <div className={`text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-blue-500 mb-2 transition-transform duration-300 ${isLowPower ? '' : 'group-hover:scale-110'}`}>
                 {stat.value}
               </div>
               <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">{stat.label}</div>

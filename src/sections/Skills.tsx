@@ -1,4 +1,5 @@
-import { motion } from 'framer-motion';
+import { useRef, useEffect } from 'react';
+import { motion, useMotionValue, useSpring, useTransform, useAnimationFrame, MotionValue } from 'framer-motion';
 // 1. Connect to the global performance engine
 import { usePerformance } from '@/context/PerformanceContext'; 
 import { 
@@ -55,8 +56,8 @@ const trainingItems = [
   { name: 'Control Systems Design', issuer: 'Mapúa University', status: 'In Progress', icon: Sliders },
 ];
 
-// --- UPGRADED PROGRESS BAR WITH PERFORMANCE LOGIC ---
-function ProgressBar({ level, delay, isLowPower }: { level: number; delay: number; isLowPower: boolean }) {
+// --- UPGRADED PROGRESS BAR WIRED TO PHYSICS ENGINE ---
+function ProgressBar({ level, delay, bgPos }: { level: number; delay: number; bgPos: MotionValue<string> }) {
   return (
     <div className="h-2.5 w-full bg-secondary/50 dark:bg-slate-800/50 rounded-full overflow-hidden mt-2 shadow-inner">
       <motion.div
@@ -66,14 +67,13 @@ function ProgressBar({ level, delay, isLowPower }: { level: number; delay: numbe
         transition={{ duration: 1.2, delay: delay, ease: "easeOut" }}
         className="h-full rounded-full relative overflow-hidden shadow-[0_0_10px_rgba(59,130,246,0.3)]"
       >
-        {/* INNER GRADIENT: Freeze position if Performance Mode is on */}
+        {/* INNER GRADIENT: Driven by the seamless useAnimationFrame physics */}
         <motion.div
           className="absolute inset-0 rounded-full w-full h-full"
-          animate={isLowPower ? {} : { backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"] }}
-          transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
           style={{
             backgroundImage: "linear-gradient(135deg, rgb(14, 165, 233), rgb(59, 130, 246), rgb(139, 92, 246), rgb(14, 165, 233))",
             backgroundSize: "300% 300%",
+            backgroundPosition: bgPos
           }}
         />
       </motion.div>
@@ -82,8 +82,61 @@ function ProgressBar({ level, delay, isLowPower }: { level: number; delay: numbe
 }
 
 export function Skills() {
-  // 2. Destructure global state
   const { isLowPower } = usePerformance();
+
+  // --- SEAMLESS PHYSICS ENGINE ---
+  // Tracks the positions of the electricity lines and the gradients
+  const trace1Y = useMotionValue(-100);
+  const trace2Y = useMotionValue(-100);
+  const trace3X = useMotionValue(-100);
+  
+  const gradientPos = useMotionValue(0);
+  const gradientDirection = useRef(1);
+
+  // The Spring determines how fast we decelerate (Smooth "braking" effect)
+  const speedMultiplier = useSpring(isLowPower ? 0.2 : 1, { stiffness: 40, damping: 20 });
+
+  useEffect(() => {
+    speedMultiplier.set(isLowPower ? 0.2 : 1);
+  }, [isLowPower, speedMultiplier]);
+
+  useAnimationFrame((time, delta) => {
+    // Safety check in case the user switches browser tabs
+    if (delta > 100) delta = 16; 
+    const dSec = delta / 1000;
+    const m = speedMultiplier.get();
+
+    // 1. Electricity Traces Math
+    let y1 = trace1Y.get() + (50 * m * dSec);
+    if (y1 >= 100) y1 -= 200;
+    trace1Y.set(y1);
+
+    let y2 = trace2Y.get() + (33.33 * m * dSec);
+    if (y2 >= 100) y2 -= 200;
+    trace2Y.set(y2);
+
+    let x3 = trace3X.get() + (28.57 * m * dSec);
+    if (x3 >= 100) x3 -= 200;
+    trace3X.set(x3);
+
+    // 2. Ping-Pong Gradient Math (0% -> 100% -> 0%)
+    let gP = gradientPos.get() + (66.66 * m * dSec * gradientDirection.current);
+    if (gP >= 100) {
+      gP = 100 - (gP - 100);
+      gradientDirection.current = -1;
+    } else if (gP <= 0) {
+      gP = Math.abs(gP);
+      gradientDirection.current = 1;
+    }
+    gradientPos.set(gP);
+  });
+
+  // Translating the raw numbers into CSS strings
+  const t1 = useTransform(trace1Y, v => `${v}%`);
+  const t2 = useTransform(trace2Y, v => `${v}%`);
+  const t3 = useTransform(trace3X, v => `${v}%`);
+  const bgPosString = useTransform(gradientPos, v => `${v}% 50%`);
+  // --------------------------------
 
   return (
     <section id="skills" className="py-24 lg:py-32 relative bg-background overflow-hidden transition-colors duration-300">
@@ -97,29 +150,22 @@ export function Skills() {
         }} 
       />
 
-      {/* BACKGROUND GLOWS: Hide entirely in Performance Mode */}
-      {!isLowPower && (
-        <>
-          <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-accent-blue/5 rounded-full blur-[120px] pointer-events-none" />
-          <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-purple-500/5 rounded-full blur-[100px] pointer-events-none" />
-        </>
-      )}
+      {/* BACKGROUND GLOWS: Smoothly dim and reduce blur radius in Performance Mode */}
+      <div className={`absolute top-0 right-0 w-[600px] h-[600px] rounded-full pointer-events-none transition-all duration-1000 ${isLowPower ? 'bg-accent-blue/5 blur-[60px] opacity-40' : 'bg-accent-blue/5 blur-[120px] opacity-100'}`} />
+      <div className={`absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full pointer-events-none transition-all duration-1000 ${isLowPower ? 'bg-purple-500/5 blur-[50px] opacity-40' : 'bg-purple-500/5 blur-[100px] opacity-100'}`} />
 
-      {/* CIRCUIT TRACES: Stop loop if Performance Mode is on */}
+      {/* CIRCUIT TRACES: Tied to physics engine for zero-teleport deceleration */}
       <motion.div 
-        className="absolute top-0 left-[20%] w-[1px] h-full bg-gradient-to-b from-transparent via-sky-500/30 dark:via-sky-400/80 to-transparent"
-        animate={isLowPower ? {} : { y: ['-100%', '100%'] }}
-        transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+        className="absolute top-0 left-[20%] w-[1px] h-full bg-gradient-to-b from-transparent via-sky-500/30 dark:via-sky-400/80 to-transparent shadow-[0_0_10px_rgba(56,189,248,0.2)] dark:shadow-[0_0_10px_#38bdf8]"
+        style={{ y: t1 }}
       />
       <motion.div 
-        className="absolute top-0 right-[25%] w-[1px] h-full bg-gradient-to-b from-transparent via-blue-500/30 dark:via-blue-500/80 to-transparent"
-        animate={isLowPower ? {} : { y: ['-100%', '100%'] }}
-        transition={{ duration: 6, repeat: Infinity, ease: "linear", delay: 2 }}
+        className="absolute top-0 right-[25%] w-[1px] h-full bg-gradient-to-b from-transparent via-blue-500/30 dark:via-blue-500/80 to-transparent shadow-[0_0_10px_rgba(59,130,246,0.2)] dark:shadow-[0_0_10px_#3b82f6]"
+        style={{ y: t2 }}
       />
       <motion.div 
-        className="absolute top-[30%] left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-sky-500/20 dark:via-sky-400/50 to-transparent"
-        animate={isLowPower ? {} : { x: ['-100%', '100%'] }}
-        transition={{ duration: 7, repeat: Infinity, ease: "linear", delay: 1 }}
+        className="absolute top-[30%] left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-sky-500/20 dark:via-sky-400/50 to-transparent shadow-[0_0_10px_rgba(56,189,248,0.2)] dark:shadow-[0_0_10px_#38bdf8]"
+        style={{ x: t3 }}
       />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
@@ -136,11 +182,15 @@ export function Skills() {
             <div className="relative overflow-hidden inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-sky-500/10 dark:bg-accent-blue/10 border border-sky-500/20 dark:border-accent-blue/20">
               <span className={`w-2 h-2 rounded-full bg-sky-500 dark:bg-accent-blue relative z-10 ${isLowPower ? '' : 'animate-pulse'}`} />
               <span className="text-sky-600 dark:text-accent-blue text-xs font-bold uppercase tracking-widest relative z-10">My Expertise</span>
-              <motion.div 
-                className="absolute top-0 bottom-0 w-1/2 bg-gradient-to-r from-transparent via-sky-300/40 dark:via-white/20 to-transparent -skew-x-12 z-0"
-                animate={isLowPower ? {} : { left: ['-100%', '200%'] }}
-                transition={{ duration: 1.5, repeat: Infinity, repeatDelay: 3.5, ease: "easeInOut" }}
-              />
+              
+              {/* FAST SHINE: 0.8s duration, completely removed in Performance Mode */}
+              {!isLowPower && (
+                <motion.div 
+                  className="absolute top-0 bottom-0 w-[150%] bg-gradient-to-r from-transparent via-sky-300/40 dark:via-white/20 to-transparent -skew-x-12 z-0"
+                  animate={{ left: ['-100%', '200%'] }}
+                  transition={{ duration: 0.8, repeat: Infinity, repeatDelay: 2.5, ease: "easeInOut" }}
+                />
+              )}
             </div>
           </motion.div>
 
@@ -148,8 +198,6 @@ export function Skills() {
             Skills &{' '}
             <motion.span 
               className="inline-block"
-              animate={isLowPower ? {} : { backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"] }}
-              transition={{ duration: 4, ease: "easeInOut", repeat: Infinity }}
               style={{
                 backgroundImage: "linear-gradient(135deg, rgb(14, 165, 233), rgb(59, 130, 246), rgb(139, 92, 246), rgb(14, 165, 233))",
                 backgroundSize: "300% 300%",
@@ -157,6 +205,7 @@ export function Skills() {
                 WebkitTextFillColor: "transparent",
                 backgroundClip: "text",
                 color: "transparent",
+                backgroundPosition: bgPosString // Driven by physics engine
               }}
             >
               Tools
@@ -195,7 +244,7 @@ export function Skills() {
                       <ProgressBar
                         level={skill.level}
                         delay={0.2 + (skillIndex * 0.1)} 
-                        isLowPower={isLowPower}
+                        bgPos={bgPosString}
                       />
                     </div>
                   ))}

@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect, ReactNode, MouseEvent } from 'react';
 import { motion, useInView } from 'framer-motion';
+// 1. Connect to the global performance engine
+import { usePerformance } from '@/context/PerformanceContext'; 
 import { Button } from '@/components/ui/button';
 import { 
   Dialog, 
@@ -17,7 +19,7 @@ import {
   X 
 } from 'lucide-react';
 
-// --- CUSTOM TYPEWRITER (No external packages needed) ---
+// --- CUSTOM TYPEWRITER (Untouched, runs smoothly in both modes) ---
 function TypewriterEffect() {
   const strings = [
     'BS/MS Electrical Engineering Student',
@@ -60,7 +62,7 @@ function TypewriterEffect() {
   return <span>{text}<span className="animate-pulse ml-1 text-slate-400">|</span></span>;
 }
 
-// --- CUSTOM COUNTER (Uses native framer-motion) ---
+// --- CUSTOM COUNTER ---
 function Counter({ end, duration = 2 }: { end: number; duration?: number }) {
   const [count, setCount] = useState(0);
   const ref = useRef<HTMLSpanElement>(null);
@@ -86,7 +88,7 @@ function Counter({ end, duration = 2 }: { end: number; duration?: number }) {
   return <span ref={ref}>{count}</span>;
 }
 
-// --- ORDINAL SEQUENCE ANIMATION (1st, 2nd, 3rd) ---
+// --- ORDINAL SEQUENCE ANIMATION ---
 function OrdinalSequence({ sequence, duration = 1.5 }: { sequence: string[]; duration?: number }) {
   const [index, setIndex] = useState(0);
   const ref = useRef<HTMLSpanElement>(null);
@@ -190,6 +192,9 @@ function StatItem({ value, label, suffix = '', tooltip, isCounter = false }: Sta
 // --- MAIN HERO COMPONENT ---
 export function Hero() {
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+  
+  // 2. Destructure global performance state
+  const { isLowPower } = usePerformance();
 
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
@@ -202,13 +207,22 @@ export function Hero() {
   };
 
   return (
-    // FIX APPLIED HERE: pt-32 adds massive breathing room on mobile, md:pt-20 keeps desktop clean.
     <section className="relative min-h-screen flex flex-col justify-center pt-32 md:pt-20 pb-16 overflow-hidden bg-background">
-      {/* Animated Background Blobs */}
-      <motion.div 
-        animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
-        transition={{ duration: 8, repeat: Infinity }}
-        className="absolute top-1/4 right-0 w-96 h-96 bg-accent-blue/10 rounded-full blur-3xl" 
+      
+      {/* NATIVE CSS ANIMATION ENGINE (Seamless transitions without teleporting) */}
+      <style dangerouslySetInnerHTML={{__html: `
+        @keyframes bg-spin { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+        @keyframes float-img { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
+        @keyframes float-medal { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+        @keyframes blob-pulse { 0%, 100% { transform: scale(1); opacity: 0.3; } 50% { transform: scale(1.2); opacity: 0.5; } }
+      `}} />
+
+      {/* Animated Background Blobs - Smoothly transition to static dim in Low Power mode */}
+      <div 
+        className={`absolute top-1/4 right-0 w-96 h-96 bg-accent-blue/10 rounded-full transition-all duration-1000 ${
+          isLowPower ? 'blur-2xl opacity-20' : 'blur-3xl opacity-30'
+        }`}
+        style={{ animation: isLowPower ? 'none' : 'blob-pulse 8s infinite ease-in-out' }}
       />
       
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full flex-grow flex items-center z-10">
@@ -225,7 +239,8 @@ export function Hero() {
               <motion.div whileHover={{ scale: 1.05 }} className="inline-block">
                 <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white dark:bg-slate-800 shadow-lg border border-slate-200 dark:border-slate-700 transition-colors hover:bg-slate-50 dark:hover:bg-slate-700/80 cursor-default">
                   <span className="relative flex h-3 w-3">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                    {/* PERFORMANCE MODE: Downshift from harsh ping to a gentle pulse */}
+                    <span className={`absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75 ${isLowPower ? 'animate-pulse' : 'animate-ping'}`}></span>
                     <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
                   </span>
                   <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">
@@ -240,10 +255,8 @@ export function Hero() {
               <p className="text-lg text-muted-foreground mb-2">Hello, I'm</p>
               <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold mb-4 flex flex-col items-start">
                 <span className="text-foreground">Karl Philip</span>
-                <motion.span 
+                <span 
                   className="leading-tight py-2 inline-block w-fit"
-                  animate={{ backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"] }}
-                  transition={{ duration: 3, ease: "easeInOut", repeat: Infinity }}
                   style={{
                     backgroundImage: "linear-gradient(135deg, rgb(14, 165, 233), rgb(59, 130, 246), rgb(139, 92, 246), rgb(14, 165, 233))",
                     backgroundSize: "300% 300%",
@@ -252,10 +265,11 @@ export function Hero() {
                     backgroundClip: "text",
                     color: "transparent",
                     filter: "drop-shadow(0 0 12px rgba(59, 130, 246, 0.4))",
+                    animation: `bg-spin ${isLowPower ? 12 : 3}s linear infinite` // Native CSS Deceleration
                   }}
                 >
                   Espino
-                </motion.span>
+                </span>
               </h1>
               
               {/* Custom Typewriter Implementation */}
@@ -329,13 +343,19 @@ export function Hero() {
             transition={{ duration: 0.8, delay: 0.4 }}
             className="order-1 lg:order-2 flex justify-center lg:justify-end"
           >
-            <motion.div 
+            {/* Native CSS Floating Animation */}
+            <div 
               className="relative group cursor-zoom-in"
               onClick={() => setIsImageModalOpen(true)}
-              animate={{ y: [0, -15, 0] }}
-              transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+              style={{ animation: `float-img ${isLowPower ? 15 : 6}s ease-in-out infinite` }}
             >
-              <motion.div animate={{ opacity: [0.5, 0.8, 0.5] }} transition={{ duration: 4, repeat: Infinity }} className="absolute inset-0 bg-accent-blue/30 rounded-3xl blur-3xl scale-110" />
+              {/* Background Glow - Dimmed and locked on Performance Mode */}
+              <div 
+                className={`absolute inset-0 bg-accent-blue/30 rounded-3xl scale-110 transition-all duration-1000 ${
+                  isLowPower ? 'blur-2xl opacity-30' : 'blur-3xl opacity-50'
+                }`} 
+                style={{ animation: isLowPower ? 'none' : 'blob-pulse 4s infinite ease-in-out' }}
+              />
               
               <div className="relative w-72 h-96 sm:w-80 sm:h-[28rem] lg:w-96 lg:h-[32rem] rounded-3xl overflow-hidden border-2 border-white/10 shadow-2xl transition-all duration-300 group-hover:border-accent-blue/30">
                 <img 
@@ -360,29 +380,23 @@ export function Hero() {
                 </div>
               </div>
 
-              {/* MEDAL */}
-              <motion.div 
-                animate={{ 
-                  y: [0, -5, 0],
-                  backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"]
-                }} 
-                transition={{ 
-                  y: { duration: 3, repeat: Infinity, ease: "easeInOut" },
-                  backgroundPosition: { duration: 3, repeat: Infinity, ease: "easeInOut" }
-                }} 
+              {/* MEDAL: Slows down gracefully via Native CSS */}
+              <div 
                 className="absolute -top-4 -right-4 text-white rounded-2xl p-4 shadow-xl z-30"
                 style={{
                   backgroundImage: "linear-gradient(135deg, rgb(14, 165, 233), rgb(59, 130, 246), rgb(139, 92, 246), rgb(14, 165, 233))",
                   backgroundSize: "300% 300%",
+                  animation: `float-medal ${isLowPower ? 12 : 3}s ease-in-out infinite, bg-spin ${isLowPower ? 12 : 3}s linear infinite`
                 }}
               >
                 <Award className="h-6 w-6" />
-              </motion.div>
-            </motion.div>
+              </div>
+            </div>
           </motion.div>
         </div>
       </div>
 
+      {/* Scroll indicator */}
       <motion.div 
         initial={{ opacity: 0 }} 
         animate={{ opacity: 1 }} 
@@ -394,12 +408,18 @@ export function Hero() {
         </div>
       </motion.div>
 
+      {/* --- Z-INDEX SHIELD (Chatbot Blocker) --- */}
+      {isImageModalOpen && (
+        <div className="fixed inset-0 z-[9990] bg-black/40 backdrop-blur-sm pointer-events-auto" aria-hidden="true" />
+      )}
+
       {/* IMAGE POPUP MODAL */}
       <Dialog open={isImageModalOpen} onOpenChange={setIsImageModalOpen}>
-        <DialogContent className="max-w-4xl p-0 bg-slate-900 border-slate-800 overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.5)] z-[100] outline-none border-none">
+        {/* Forced !z-[9999] ensures it strictly sits over the background shield */}
+        <DialogContent className="max-w-4xl p-0 bg-slate-900 border-slate-800 overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.5)] !z-[9999] outline-none border-none">
           <button 
             onClick={() => setIsImageModalOpen(false)}
-            className="absolute top-4 right-4 z-[110] p-2 rounded-full bg-black/50 backdrop-blur-md border border-white/20 text-white hover:bg-accent-blue transition-colors group"
+            className="absolute top-4 right-4 z-[10000] p-2 rounded-full bg-black/50 backdrop-blur-md border border-white/20 text-white hover:bg-accent-blue transition-colors group"
             aria-label="Close"
           >
             <X className="h-5 w-5 group-hover:scale-110 transition-transform" />

@@ -1,4 +1,7 @@
-import { motion } from 'framer-motion';
+import { useRef, useEffect } from 'react';
+import { motion, useMotionValue, useSpring, useTransform, useAnimationFrame } from 'framer-motion';
+// 1. Connect to the global performance engine
+import { usePerformance } from '@/context/PerformanceContext'; 
 import { GraduationCap, Calendar, MapPin, Award, BookOpen, Lightbulb, Cpu, Code, ChevronRight } from 'lucide-react';
 import { SpotlightCard } from '@/components/SpotlightCard';
 
@@ -23,10 +26,48 @@ const fadeInUp = {
 };
 
 export function About() {
+  // 2. Destructure global state
+  const { isLowPower } = usePerformance();
+
+  // --- SEAMLESS PHYSICS ENGINE FOR ALL GRADIENTS ---
+  // Guarantees zero-teleportation when switching speeds
+  const gradientPos = useMotionValue(0);
+  const gradientDirection = useRef(1);
+
+  // The Spring acts as a smooth "throttle" for the animation speed
+  const speedMultiplier = useSpring(isLowPower ? 0.2 : 1, { stiffness: 40, damping: 20 });
+
+  useEffect(() => {
+    speedMultiplier.set(isLowPower ? 0.2 : 1);
+  }, [isLowPower, speedMultiplier]);
+
+  useAnimationFrame((time, delta) => {
+    if (delta > 100) delta = 16; // Safety catch for browser tab switching
+    const dSec = delta / 1000;
+    const m = speedMultiplier.get();
+
+    // Ping-Pong Gradient Math (0% -> 100% -> 0%)
+    let gP = gradientPos.get() + (40 * m * dSec * gradientDirection.current);
+    if (gP >= 100) {
+      gP = 100 - (gP - 100);
+      gradientDirection.current = -1;
+    } else if (gP <= 0) {
+      gP = Math.abs(gP);
+      gradientDirection.current = 1;
+    }
+    gradientPos.set(gP);
+  });
+
+  const bgPosString = useTransform(gradientPos, v => `${v}% 50%`);
+  // --------------------------------------------------
+
   return (
     <section id="about" className="py-24 lg:py-32 relative bg-background overflow-hidden">
-      {/* Subtle Background Glow */}
-      <div className="absolute top-1/2 left-0 -translate-y-1/2 w-[500px] h-[500px] bg-accent-blue/5 rounded-full blur-[100px] pointer-events-none" />
+      
+      {/* Subtle Background Glow - Smoothly dim and reduce blur radius in Performance Mode */}
+      <div className={`absolute top-1/2 left-0 -translate-y-1/2 w-[500px] h-[500px] rounded-full pointer-events-none transition-all duration-1000 ${
+        isLowPower ? 'bg-accent-blue/5 blur-[60px] opacity-40' : 'bg-accent-blue/5 blur-[100px] opacity-100'
+      }`} />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="grid lg:grid-cols-2 gap-16 lg:gap-24">
@@ -39,13 +80,17 @@ export function About() {
               className="inline-block mb-6 cursor-default"
             >
               <div className="relative overflow-hidden inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-accent-blue/10 border border-accent-blue/20">
-                <span className="w-2 h-2 rounded-full bg-accent-blue animate-pulse relative z-10" />
+                <span className={`w-2 h-2 rounded-full bg-accent-blue relative z-10 ${isLowPower ? '' : 'animate-pulse'}`} />
                 <span className="text-accent-blue text-xs font-bold uppercase tracking-widest relative z-10">Get to Know Me</span>
-                <motion.div 
-                  className="absolute top-0 bottom-0 w-1/2 bg-gradient-to-r from-transparent via-white/40 dark:via-white/20 to-transparent -skew-x-12 z-0"
-                  animate={{ left: ['-100%', '200%'] }}
-                  transition={{ duration: 1.5, repeat: Infinity, repeatDelay: 3.5, ease: "easeInOut" }}
-                />
+                
+                {/* FAST SHINE: Cleanly disabled in Performance Mode to save render costs */}
+                {!isLowPower && (
+                  <motion.div 
+                    className="absolute top-0 bottom-0 w-[150%] bg-gradient-to-r from-transparent via-white/40 dark:via-white/20 to-transparent -skew-x-12 z-0"
+                    animate={{ left: ['-100%', '200%'] }}
+                    transition={{ duration: 1.5, repeat: Infinity, repeatDelay: 3.5, ease: "easeInOut" }}
+                  />
+                )}
               </div>
             </motion.div>
             
@@ -53,8 +98,6 @@ export function About() {
               Engineering the{' '}
               <motion.span 
                 className="inline-block"
-                animate={{ backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"] }}
-                transition={{ duration: 4, ease: "easeInOut", repeat: Infinity }}
                 style={{
                   backgroundImage: "linear-gradient(135deg, rgb(14, 165, 233), rgb(59, 130, 246), rgb(139, 92, 246), rgb(14, 165, 233))",
                   backgroundSize: "300% 300%",
@@ -62,6 +105,7 @@ export function About() {
                   WebkitTextFillColor: "transparent",
                   backgroundClip: "text",
                   color: "transparent",
+                  backgroundPosition: bgPosString // Driven by physics engine
                 }}
               >
                 Future.
@@ -76,8 +120,6 @@ export function About() {
                 My academic focus centers on{' '}
                 <motion.span 
                   className="font-bold inline-block"
-                  animate={{ backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"] }}
-                  transition={{ duration: 4, ease: "easeInOut", repeat: Infinity }}
                   style={{
                     backgroundImage: "linear-gradient(135deg, rgb(14, 165, 233), rgb(59, 130, 246), rgb(139, 92, 246), rgb(14, 165, 233))",
                     backgroundSize: "300% 300%",
@@ -85,6 +127,7 @@ export function About() {
                     WebkitTextFillColor: "transparent",
                     backgroundClip: "text",
                     color: "transparent",
+                    backgroundPosition: bgPosString // Driven by physics engine
                   }}
                 >
                   power system protection, operation, and automation
@@ -99,7 +142,8 @@ export function About() {
             {/* Expertise Spotlight Cards */}
             <div className="grid sm:grid-cols-3 gap-4 mt-10">
               {expertiseAreas.map((area, index) => (
-                <motion.div key={area.title} whileHover={{ y: -5 }} transition={{ type: "spring", stiffness: 300 }}>
+                // PERFORMANCE MODE: Disable hover translate
+                <motion.div key={area.title} whileHover={isLowPower ? {} : { y: -5 }} transition={{ type: "spring", stiffness: 300 }}>
                   <SpotlightCard className="p-5 h-full border border-border/50 bg-card/50 backdrop-blur-sm flex flex-col items-start group">
                     <div className="p-2 rounded-lg bg-accent-blue/10 mb-4 group-hover:bg-accent-blue/20 transition-colors">
                       <area.icon className="h-6 w-6 text-accent-blue" />
@@ -144,33 +188,33 @@ export function About() {
                     className="relative pl-16 group" 
                   >
                     
-                    {/* FIX: Separated the transition timing so background is slow, but hover is fast/bouncy */}
                     <motion.div 
                       className={`absolute left-0 top-1 w-12 h-12 rounded-xl flex items-center justify-center z-10 cursor-default ${
                         item.isActive 
                           ? 'border-none shadow-[0_0_20px_rgba(59,130,246,0.5)]' 
-                          : 'bg-background border-2 border-border group-hover:border-accent-blue/50 group-hover:scale-110 group-hover:shadow-[0_0_15px_rgba(59,130,246,0.2)] transition-all duration-300'
-                      }`}
-                      initial={item.isActive ? { scale: 1.1, backgroundPosition: "0% 50%" } : {}}
-                      animate={item.isActive ? { backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"] } : {}}
-                      whileHover={item.isActive ? { scale: 1.2, rotate: 5 } : {}}
+                          : 'bg-background border-2 border-border group-hover:border-accent-blue/50 transition-all duration-300'
+                      } ${!isLowPower && !item.isActive ? 'group-hover:scale-110 group-hover:shadow-[0_0_15px_rgba(59,130,246,0.2)]' : ''}`}
+                      initial={item.isActive ? { scale: 1.1 } : {}}
+                      // PERFORMANCE MODE: Disable hover physics
+                      whileHover={item.isActive && !isLowPower ? { scale: 1.2, rotate: 5 } : {}}
                       transition={item.isActive ? { 
-                        backgroundPosition: { duration: 3, repeat: Infinity, ease: "linear" }, // Slow color loop
-                        scale: { type: "spring", stiffness: 300, damping: 15 }, // Fast bounce
-                        rotate: { type: "spring", stiffness: 300, damping: 15 } // Fast tilt
+                        scale: { type: "spring", stiffness: 300, damping: 15 },
+                        rotate: { type: "spring", stiffness: 300, damping: 15 } 
                       } : {}}
+                      // Gradient syncs with the rest of the page via physics engine
                       style={item.isActive ? {
                         backgroundImage: "linear-gradient(135deg, rgb(14, 165, 233), rgb(59, 130, 246), rgb(139, 92, 246), rgb(14, 165, 233))",
                         backgroundSize: "300% 300%",
+                        backgroundPosition: bgPosString
                       } : {}}
                     >
                       {item.isActive && (
-                        <div className="absolute inset-0 rounded-xl border border-white/50 animate-ping opacity-20 pointer-events-none" />
+                        // PERFORMANCE MODE: Downshift the harsh ping to a gentle pulse
+                        <div className={`absolute inset-0 rounded-xl border border-white/50 opacity-20 pointer-events-none ${isLowPower ? 'animate-pulse' : 'animate-ping'}`} />
                       )}
                       
-                      {/* Wrapped the icon so it reacts to the mouse directly */}
                       <motion.div
-                        whileHover={item.isActive ? { scale: 1.2, rotate: -10 } : {}}
+                        whileHover={item.isActive && !isLowPower ? { scale: 1.2, rotate: -10 } : {}}
                         transition={{ type: "spring", stiffness: 400, damping: 10 }}
                         className="relative z-20 flex items-center justify-center"
                       >

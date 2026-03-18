@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useScrollReveal } from '@/hooks/useScrollReveal';
+// 1. Connect to the global performance engine
+import { usePerformance } from '@/context/PerformanceContext'; 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -51,6 +53,10 @@ const contactInfo: ContactInfo[] = [
 
 export function Contact() {
   const { ref: sectionRef, isRevealed } = useScrollReveal<HTMLElement>();
+  
+  // 2. Destructure global state
+  const { isLowPower } = usePerformance();
+
   const [formState, setFormState] = useState({
     name: '',
     email: '',
@@ -116,6 +122,11 @@ export function Contact() {
       ref={sectionRef}
       className="py-24 lg:py-32 relative bg-background overflow-hidden transition-colors duration-300"
     >
+      {/* NATIVE CSS ANIMATION ENGINE (Seamless transitions without teleporting) */}
+      <style dangerouslySetInnerHTML={{__html: `
+        @keyframes bg-spin { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+      `}} />
+
       {/* --- MINIMALIST BACKGROUND EFFECTS --- */}
       <div 
         className="absolute inset-0 opacity-[0.03] dark:opacity-[0.08] pointer-events-none transition-opacity" 
@@ -124,8 +135,10 @@ export function Contact() {
           backgroundSize: '40px 40px' 
         }} 
       />
-      <div className="absolute top-0 right-1/4 w-[500px] h-[500px] bg-sky-500/5 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-blue-500/5 rounded-full blur-[100px] pointer-events-none" />
+      
+      {/* BACKGROUND GLOWS: Smoothly dim and reduce blur radius in Performance Mode */}
+      <div className={`absolute top-0 right-1/4 w-[500px] h-[500px] rounded-full pointer-events-none transition-all duration-1000 ${isLowPower ? 'bg-sky-500/5 blur-[60px] opacity-40' : 'bg-sky-500/5 blur-[120px] opacity-100'}`} />
+      <div className={`absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full pointer-events-none transition-all duration-1000 ${isLowPower ? 'bg-blue-500/5 blur-[50px] opacity-40' : 'bg-blue-500/5 blur-[100px] opacity-100'}`} />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         
@@ -139,22 +152,24 @@ export function Contact() {
             {/* Shimmer Badge */}
             <motion.div whileHover={{ scale: 1.05 }} className="inline-block mb-4 cursor-default">
               <div className="relative overflow-hidden inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-sky-500/10 border border-sky-500/20">
-                <span className="w-2 h-2 rounded-full bg-sky-500 animate-pulse relative z-10" />
+                <span className={`w-2 h-2 rounded-full bg-sky-500 relative z-10 ${isLowPower ? '' : 'animate-pulse'}`} />
                 <span className="text-sky-600 dark:text-sky-400 text-xs font-bold uppercase tracking-widest relative z-10">Get In Touch</span>
-                <motion.div 
-                  className="absolute top-0 bottom-0 w-1/2 bg-gradient-to-r from-transparent via-sky-300/40 dark:via-white/20 to-transparent -skew-x-12 z-0"
-                  animate={{ left: ['-100%', '200%'] }}
-                  transition={{ duration: 1.5, repeat: Infinity, repeatDelay: 3.5, ease: "easeInOut" }}
-                />
+                
+                {/* FAST SHINE: 0.8s duration, cleanly removed in Performance Mode */}
+                {!isLowPower && (
+                  <motion.div 
+                    className="absolute top-0 bottom-0 w-[150%] bg-gradient-to-r from-transparent via-sky-300/40 dark:via-white/20 to-transparent -skew-x-12 z-0"
+                    animate={{ left: ['-100%', '200%'] }}
+                    transition={{ duration: 0.8, repeat: Infinity, repeatDelay: 3.5, ease: "easeInOut" }}
+                  />
+                )}
               </div>
             </motion.div>
 
             <h2 className="text-4xl md:text-5xl font-bold mb-4 text-foreground tracking-tight">
               Let's{' '}
-              <motion.span 
+              <span 
                 className="inline-block"
-                animate={{ backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"] }}
-                transition={{ duration: 4, ease: "easeInOut", repeat: Infinity }}
                 style={{
                   backgroundImage: "linear-gradient(135deg, rgb(14, 165, 233), rgb(59, 130, 246), rgb(139, 92, 246), rgb(14, 165, 233))",
                   backgroundSize: "300% 300%",
@@ -162,10 +177,11 @@ export function Contact() {
                   WebkitTextFillColor: "transparent",
                   backgroundClip: "text",
                   color: "transparent",
+                  animation: `bg-spin ${isLowPower ? 12 : 4}s linear infinite` // Native CSS deceleration
                 }}
               >
                 Connect
-              </motion.span>
+              </span>
             </h2>
             <p className="text-lg text-muted-foreground">
               I am actively seeking an On-The-Job Training (OJT) opportunity where I can apply my analytical skills, software proficiency, and passion for electrical infrastructure.
@@ -234,7 +250,7 @@ export function Contact() {
                   href="https://www.linkedin.com/in/karl-philip-espino-388894346/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-12 h-12 rounded-xl bg-card border border-border flex items-center justify-center hover:bg-sky-500/10 hover:border-sky-500/40 text-muted-foreground hover:text-sky-600 dark:hover:text-sky-400 transition-all duration-300 hover:-translate-y-1 shadow-sm"
+                  className={`w-12 h-12 rounded-xl bg-card border border-border flex items-center justify-center hover:bg-sky-500/10 hover:border-sky-500/40 text-muted-foreground hover:text-sky-600 dark:hover:text-sky-400 transition-all duration-300 shadow-sm ${isLowPower ? '' : 'hover:-translate-y-1'}`}
                 >
                   <Linkedin className="h-5 w-5" />
                 </a>
@@ -242,13 +258,13 @@ export function Contact() {
                   href="https://github.com/Sel1207"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-12 h-12 rounded-xl bg-card border border-border flex items-center justify-center hover:bg-sky-500/10 hover:border-sky-500/40 text-muted-foreground hover:text-sky-600 dark:hover:text-sky-400 transition-all duration-300 hover:-translate-y-1 shadow-sm"
+                  className={`w-12 h-12 rounded-xl bg-card border border-border flex items-center justify-center hover:bg-sky-500/10 hover:border-sky-500/40 text-muted-foreground hover:text-sky-600 dark:hover:text-sky-400 transition-all duration-300 shadow-sm ${isLowPower ? '' : 'hover:-translate-y-1'}`}
                 >
                   <Github className="h-5 w-5" />
                 </a>
                 <a
                   href="mailto:kpcespino@mymail.mapua.edu.ph"
-                  className="w-12 h-12 rounded-xl bg-card border border-border flex items-center justify-center hover:bg-sky-500/10 hover:border-sky-500/40 text-muted-foreground hover:text-sky-600 dark:hover:text-sky-400 transition-all duration-300 hover:-translate-y-1 shadow-sm"
+                  className={`w-12 h-12 rounded-xl bg-card border border-border flex items-center justify-center hover:bg-sky-500/10 hover:border-sky-500/40 text-muted-foreground hover:text-sky-600 dark:hover:text-sky-400 transition-all duration-300 shadow-sm ${isLowPower ? '' : 'hover:-translate-y-1'}`}
                 >
                   <Mail className="h-5 w-5" />
                 </a>
@@ -264,7 +280,8 @@ export function Contact() {
             style={{ transitionDelay: '300ms' }}
           >
             <div className="bg-card/50 backdrop-blur-sm rounded-3xl p-6 lg:p-8 border border-border/50 shadow-lg relative overflow-hidden group">
-              <div className="absolute inset-0 bg-gradient-to-br from-sky-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+              {/* Form Hover Glow - Disabled in Performance Mode to save GPU repaints */}
+              <div className={`absolute inset-0 bg-gradient-to-br from-sky-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none ${isLowPower ? 'hidden' : ''}`} />
               
               <h3 className="text-2xl font-bold mb-6 text-foreground relative z-10">Send a Message</h3>
 
@@ -351,7 +368,7 @@ export function Contact() {
                   <Button
                     type="submit"
                     disabled={isSubmitting}
-                    className="w-full bg-sky-500 hover:bg-sky-600 text-white font-bold tracking-wide rounded-xl py-6 mt-4 transition-all duration-300 hover:shadow-[0_0_20px_rgba(56,189,248,0.4)] disabled:opacity-70 disabled:cursor-not-allowed"
+                    className="w-full bg-sky-500 hover:bg-sky-600 text-white font-bold tracking-wide rounded-xl py-6 mt-4 transition-all duration-300 hover:shadow-[0_0_20px_rgba(56,189,248,0.4)] disabled:opacity-70 disabled:cursor-not-allowed group/btn"
                   >
                     {isSubmitting ? (
                       <>
@@ -361,7 +378,8 @@ export function Contact() {
                     ) : (
                       <>
                         Send Message
-                        <Send className="ml-2 h-5 w-5 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                        {/* PERFORMANCE MODE: Disable hover translate on send icon */}
+                        <Send className={`ml-2 h-5 w-5 transition-transform ${isLowPower ? '' : 'group-hover/btn:translate-x-1 group-hover/btn:-translate-y-1'}`} />
                       </>
                     )}
                   </Button>

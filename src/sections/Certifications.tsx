@@ -1,4 +1,7 @@
-import { motion } from 'framer-motion';
+import { useRef, useEffect } from 'react';
+import { motion, useMotionValue, useSpring, useTransform, useAnimationFrame } from 'framer-motion';
+// 1. Connect to the global performance engine
+import { usePerformance } from '@/context/PerformanceContext'; 
 import { Award, Calendar, Trophy, Sparkles } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { SpotlightCard } from '@/components/SpotlightCard';
@@ -40,6 +43,47 @@ export function Certifications() {
     }
   };
 
+  // 2. Destructure global state
+  const { isLowPower } = usePerformance();
+
+  // --- SEAMLESS PHYSICS ENGINE ---
+  const trace1Y = useMotionValue(-100);
+  const trace2Y = useMotionValue(-100);
+  const textGradientPos = useMotionValue(0);
+  
+  // The Spring acts as a smooth "throttle" for the animation speed
+  const speedMultiplier = useSpring(isLowPower ? 0.2 : 1, { stiffness: 40, damping: 20 });
+
+  useEffect(() => {
+    speedMultiplier.set(isLowPower ? 0.2 : 1);
+  }, [isLowPower, speedMultiplier]);
+
+  useAnimationFrame((time, delta) => {
+    if (delta > 100) delta = 16; // Safety catch for tab switching
+    const dSec = delta / 1000;
+    const m = speedMultiplier.get();
+
+    // Trace 1 Math (originally ~5s)
+    let y1 = trace1Y.get() + (40 * m * dSec);
+    if (y1 >= 100) y1 -= 200;
+    trace1Y.set(y1);
+
+    // Trace 2 Math (originally ~7s)
+    let y2 = trace2Y.get() + (28.57 * m * dSec);
+    if (y2 >= 100) y2 -= 200;
+    trace2Y.set(y2);
+
+    // Text Gradient Math
+    let bgP = textGradientPos.get() + (25 * m * dSec);
+    if (bgP >= 100) bgP -= 100;
+    textGradientPos.set(bgP);
+  });
+
+  const t1 = useTransform(trace1Y, v => `${v}%`);
+  const t2 = useTransform(trace2Y, v => `${v}%`);
+  const bgPosString = useTransform(textGradientPos, v => `${v}% 50%`);
+  // -------------------------------
+
   return (
     <section id="certifications" className="py-24 lg:py-32 relative bg-background overflow-hidden transition-colors duration-300">
       
@@ -51,40 +95,44 @@ export function Certifications() {
           backgroundSize: '40px 40px' 
         }} 
       />
-      <div className="absolute top-0 right-1/4 w-[500px] h-[500px] bg-sky-500/5 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-blue-500/5 rounded-full blur-[100px] pointer-events-none" />
 
-      {/* Animated "Current" Traces connecting from Skills section */}
+      {/* BACKGROUND GLOWS: Smoothly dim and reduce blur radius in Performance Mode */}
+      <div className={`absolute top-0 right-1/4 w-[500px] h-[500px] rounded-full pointer-events-none transition-all duration-1000 ${isLowPower ? 'bg-sky-500/5 blur-[60px] opacity-40' : 'bg-sky-500/5 blur-[120px] opacity-100'}`} />
+      <div className={`absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full pointer-events-none transition-all duration-1000 ${isLowPower ? 'bg-blue-500/5 blur-[50px] opacity-40' : 'bg-blue-500/5 blur-[100px] opacity-100'}`} />
+
+      {/* CIRCUIT TRACES: Tied to physics engine for zero-teleport deceleration */}
       <motion.div 
         className="absolute top-0 left-[15%] w-[1px] h-full bg-gradient-to-b from-transparent via-sky-500/20 dark:via-sky-400/40 to-transparent shadow-[0_0_10px_rgba(56,189,248,0.1)] dark:shadow-[0_0_10px_#38bdf8]"
-        animate={{ y: ['-100%', '100%'] }}
-        transition={{ duration: 5, repeat: Infinity, ease: "linear" }}
+        style={{ y: t1 }}
       />
       <motion.div 
         className="absolute top-0 right-[20%] w-[1px] h-full bg-gradient-to-b from-transparent via-blue-500/20 dark:via-blue-500/40 to-transparent shadow-[0_0_10px_rgba(59,130,246,0.1)] dark:shadow-[0_0_10px_#3b82f6]"
-        animate={{ y: ['-100%', '100%'] }}
-        transition={{ duration: 7, repeat: Infinity, ease: "linear", delay: 1 }}
+        style={{ y: t2 }}
       />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         
-        {/* Section Header (Restored to exact H2 and P sizes of Skills/Projects) */}
+        {/* Section Header */}
         <motion.div 
           initial={{ opacity: 0, y: 20 }} 
           whileInView={{ opacity: 1, y: 0 }} 
           viewport={{ once: true }} 
           className="text-center max-w-2xl mx-auto mb-16"
         >
-          {/* Shimmer Badge (Restored to text-xs) */}
+          {/* Shimmer Badge */}
           <motion.div whileHover={{ scale: 1.05 }} className="inline-block mb-4 cursor-default">
             <div className="relative overflow-hidden inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-sky-500/10 border border-sky-500/20">
-              <span className="w-2 h-2 rounded-full bg-sky-500 animate-pulse relative z-10" />
+              <span className={`w-2 h-2 rounded-full bg-sky-500 relative z-10 ${isLowPower ? '' : 'animate-pulse'}`} />
               <span className="text-sky-600 dark:text-sky-400 text-xs font-bold uppercase tracking-widest relative z-10">Verification</span>
-              <motion.div 
-                className="absolute top-0 bottom-0 w-1/2 bg-gradient-to-r from-transparent via-sky-300/40 dark:via-white/20 to-transparent -skew-x-12 z-0"
-                animate={{ left: ['-100%', '200%'] }}
-                transition={{ duration: 1.5, repeat: Infinity, repeatDelay: 3.5, ease: "easeInOut" }}
-              />
+              
+              {/* FAST SHINE: 0.8s duration, completely disabled in Performance Mode */}
+              {!isLowPower && (
+                <motion.div 
+                  className="absolute top-0 bottom-0 w-[150%] bg-gradient-to-r from-transparent via-sky-300/40 dark:via-white/20 to-transparent -skew-x-12 z-0"
+                  animate={{ left: ['-100%', '200%'] }}
+                  transition={{ duration: 0.8, repeat: Infinity, repeatDelay: 2.5, ease: "easeInOut" }}
+                />
+              )}
             </div>
           </motion.div>
 
@@ -92,8 +140,6 @@ export function Certifications() {
             Certifications &{' '}
             <motion.span 
               className="inline-block"
-              animate={{ backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"] }}
-              transition={{ duration: 4, ease: "easeInOut", repeat: Infinity }}
               style={{
                 backgroundImage: "linear-gradient(135deg, rgb(14, 165, 233), rgb(59, 130, 246), rgb(139, 92, 246), rgb(14, 165, 233))",
                 backgroundSize: "300% 300%",
@@ -101,6 +147,7 @@ export function Certifications() {
                 WebkitTextFillColor: "transparent",
                 backgroundClip: "text",
                 color: "transparent",
+                backgroundPosition: bgPosString // Driven by physics engine
               }}
             >
               Achievements
@@ -109,7 +156,7 @@ export function Certifications() {
           <p className="text-lg text-muted-foreground">Academic accomplishments, certifications, and honors earned throughout my educational journey.</p>
         </motion.div>
 
-        {/* --- ACHIEVEMENTS METRICS (Restored to text-4xl/5xl and standard text-sm/base) --- */}
+        {/* --- ACHIEVEMENTS METRICS --- */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-16">
           {achievements.map((achievement, index) => (
             <motion.div 
@@ -121,7 +168,9 @@ export function Certifications() {
             >
               <SpotlightCard className="p-6 text-center h-full border border-border/50 hover:border-sky-500/40 transition-all group flex flex-col justify-center relative overflow-hidden bg-card/40 backdrop-blur-sm">
                 <div className="absolute inset-0 bg-gradient-to-br from-sky-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
-                <div className="text-4xl lg:text-5xl font-extrabold tracking-tight mb-2 relative z-10">
+                
+                {/* PERFORMANCE MODE: Disable hover scaling for CPU savings */}
+                <div className={`text-4xl lg:text-5xl font-extrabold tracking-tight mb-2 relative z-10 transition-transform duration-300 ${isLowPower ? '' : 'group-hover:scale-110'}`}>
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-500 to-blue-600 dark:from-sky-400 dark:to-blue-500 group-hover:opacity-80 transition-opacity">
                     {achievement.count}
                   </span>
@@ -146,9 +195,9 @@ export function Certifications() {
               <SpotlightCard className="p-6 md:p-8 h-full flex flex-col border border-border/50 hover:border-sky-500/30 transition-colors group bg-card">
                 
                 <div className="flex items-start justify-between mb-6">
-                  {/* Restored icon container to w-12 h-12 */}
                   <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-800/80 flex items-center justify-center border border-border group-hover:bg-sky-500/10 group-hover:border-sky-500/30 transition-colors shrink-0 shadow-sm relative overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-br from-sky-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                    {/* Inner glow hidden on low power */}
+                    <div className={`absolute inset-0 bg-gradient-to-br from-sky-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity ${isLowPower ? 'hidden' : ''}`} />
                     {cert.title.includes('Scholar') ? (
                       <Trophy className="h-6 w-6 text-sky-500 dark:text-sky-400 relative z-10" />
                     ) : (
@@ -158,7 +207,6 @@ export function Certifications() {
                   {getStatusBadge(cert.status)}
                 </div>
 
-                {/* Restored Title to text-xl and Description to text-sm */}
                 <h3 className="font-bold text-xl text-foreground mb-2 group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors leading-tight">
                   {cert.title}
                 </h3>
@@ -166,7 +214,6 @@ export function Certifications() {
                   {cert.description}
                 </p>
 
-                {/* Restored Footer Text to text-sm */}
                 <div className="flex items-center justify-between pt-4 border-t border-border mt-auto">
                   <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                     <Calendar className="h-4 w-4" />
@@ -177,7 +224,6 @@ export function Certifications() {
                   </span>
                 </div>
 
-                {/* Restored Credential Tag to text-xs */}
                 {cert.credential && (
                   <div className="mt-4 text-xs font-bold uppercase tracking-wider text-sky-600 dark:text-sky-300 bg-sky-50 dark:bg-sky-500/10 rounded-md px-3 py-2 text-center border border-sky-100 dark:border-sky-500/20 group-hover:border-sky-300 dark:group-hover:border-sky-500/40 group-hover:bg-sky-100 dark:group-hover:bg-sky-500/20 transition-all flex items-center justify-center gap-2">
                     <Sparkles className="w-3.5 h-3.5" />
