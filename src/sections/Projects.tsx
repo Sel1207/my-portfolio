@@ -29,7 +29,7 @@ function TiltCard({ children, onClick }: { children: React.ReactNode; onClick: (
   const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], ["-7deg", "7deg"]);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    // Disable tilt on touch devices to prevent jumping
+    // Disable tilt on touch devices to prevent layout jumping during swipe
     if (window.matchMedia("(pointer: coarse)").matches) return;
     
     const rect = e.currentTarget.getBoundingClientRect();
@@ -82,16 +82,16 @@ const initialProjects = [
   { id: 'bjt-speaker', title: 'Electronics I', subtitle: 'BJT Amplifier Speaker', description: 'Designed and constructed a functional audio speaker driven by a custom-built BJT amplifier circuit.', fullDescription: 'A hardware capstone for Electronics 1 Laboratory (ECEA101L-4) titled "Amplifying Knowledge". Designed a BJT-based audio amplifier from scratch, performing DC biasing and AC small-signal analysis to successfully drive a physical speaker with minimal distortion.', image: '/project-speaker.jpg', tags: ['1T2425', 'Audio Amp', 'Circuit Design'], icon: Volume2, features: ['DC biasing & AC analysis', 'Impedance matching', 'Hardware soldering & testing'], technologies: ['BJT Transistors', 'Oscilloscopes', 'Function Generators'] },
 ];
 
-const INFINITE_PROJECTS = [...initialProjects, ...initialProjects, ...initialProjects, ...initialProjects, ...initialProjects, ...initialProjects];
+const INFINITE_PROJECTS = [...initialProjects, ...initialProjects, ...initialProjects, ...initialProjects, ...initialProjects];
 
 export function Projects() {
   const [selectedProject, setSelectedProject] = useState<typeof initialProjects[0] | null>(null);
   const [itemsPerPage, setItemsPerPage] = useState(3);
-  const [startIndex, setStartIndex] = useState(12); // Balanced starting point for infinite loop
+  const [startIndex, setStartIndex] = useState(12);
 
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth < 640) setItemsPerPage(1.2); // Peeking effect for mobile
+      if (window.innerWidth < 640) setItemsPerPage(1); // Exactly 1 project on mobile
       else if (window.innerWidth < 1024) setItemsPerPage(2);
       else setItemsPerPage(3);
     };
@@ -105,35 +105,26 @@ export function Projects() {
 
   return (
     <section id="projects" className="relative py-24 lg:py-32 min-h-screen flex flex-col justify-center bg-slate-950 overflow-hidden text-slate-300">
-      
-      {/* Background Effects */}
+      {/* Background and Circuit Effects remain same */}
       <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'linear-gradient(rgba(148, 163, 184, 0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(148, 163, 184, 0.2) 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-sky-500/10 rounded-full blur-[150px] pointer-events-none" />
 
-      {/* Circuit Traces */}
-      <motion.div className="absolute top-0 left-[20%] w-[1px] h-full bg-gradient-to-b from-transparent via-sky-400/80 to-transparent shadow-[0_0_10px_#38bdf8]" animate={{ y: ['-100%', '100%'] }} transition={{ duration: 4, repeat: Infinity, ease: "linear" }} />
-      <motion.div className="absolute top-0 right-[25%] w-[1px] h-full bg-gradient-to-b from-transparent via-blue-500/80 to-transparent shadow-[0_0_10px_#3b82f6]" animate={{ y: ['-100%', '100%'] }} transition={{ duration: 6, repeat: Infinity, ease: "linear", delay: 2 }} />
-
       <div className="relative max-w-full mx-auto px-4 z-10 overflow-visible">
-        
-        {/* Section Header */}
         <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center max-w-2xl mx-auto mb-16 px-4">
           <div className="relative overflow-hidden inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-sky-500/10 border border-sky-500/20 mb-4">
             <span className="w-2 h-2 rounded-full bg-sky-500 animate-pulse" />
             <span className="text-sky-400 text-xs font-bold uppercase tracking-widest">My Work</span>
           </div>
           <h2 className="text-4xl md:text-5xl font-bold text-white tracking-tight mb-6">Selected Projects</h2>
-          <motion.div className="w-20 h-1.5 rounded-full mx-auto" animate={{ backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"] }} transition={{ duration: 3, repeat: Infinity, ease: "linear" }} style={{ backgroundImage: "linear-gradient(135deg, rgb(14, 165, 233), rgb(59, 130, 246), rgb(139, 92, 246), rgb(14, 165, 233))", backgroundSize: "300% 300%" }} />
+          <div className="w-20 h-1.5 bg-sky-500 rounded-full mx-auto" />
         </motion.div>
 
-        {/* --- CAROUSEL WRAPPER --- */}
         <div className="relative w-full max-w-[1400px] mx-auto group/carousel">
-          
-          {/* Nav Buttons (Hidden on mobile for better swiping) */}
-          <button onClick={prev} className="hidden md:flex absolute top-1/2 -left-12 -translate-y-1/2 w-12 h-12 bg-slate-900 border border-slate-700 rounded-full items-center justify-center text-sky-400 z-40 hover:bg-slate-800 active:scale-90 transition-all shadow-[0_0_15px_rgba(0,0,0,0.5)]">
+          {/* Desktop Nav Buttons */}
+          <button onClick={prev} className="hidden md:flex absolute top-1/2 -left-12 -translate-y-1/2 w-12 h-12 bg-slate-900 border border-slate-700 rounded-full items-center justify-center text-sky-400 z-40 hover:bg-slate-800 active:scale-90 transition-all shadow-xl">
             <ChevronLeft className="w-6 h-6" />
           </button>
-          <button onClick={next} className="hidden md:flex absolute top-1/2 -right-12 -translate-y-1/2 w-12 h-12 bg-slate-900 border border-slate-700 rounded-full items-center justify-center text-sky-400 z-40 hover:bg-slate-800 active:scale-90 transition-all shadow-[0_0_15px_rgba(0,0,0,0.5)]">
+          <button onClick={next} className="hidden md:flex absolute top-1/2 -right-12 -translate-y-1/2 w-12 h-12 bg-slate-900 border border-slate-700 rounded-full items-center justify-center text-sky-400 z-40 hover:bg-slate-800 active:scale-90 transition-all shadow-xl">
             <ChevronRight className="w-6 h-6" />
           </button>
 
@@ -144,14 +135,17 @@ export function Projects() {
               drag="x"
               dragConstraints={{ left: 0, right: 0 }}
               onDragEnd={(_, info) => {
-                if (info.offset.x < -100) next();
-                if (info.offset.x > 100) prev();
+                // Swipe threshold of 50px for snappier feel on mobile
+                if (info.offset.x < -50) next();
+                if (info.offset.x > 50) prev();
               }}
-              animate={{ x: `calc(-${startIndex * (100 / itemsPerPage)}% + ${itemsPerPage < 2 ? '10%' : '0px'})` }}
-              transition={{ type: "spring", stiffness: 200, damping: 25 }}
+              // On mobile, animate directly to the 100% offset of the current index
+              animate={{ x: `-${startIndex * (100 / itemsPerPage)}%` }}
+              transition={{ type: "spring", stiffness: 250, damping: 30 }}
             >
               {INFINITE_PROJECTS.map((project, index) => {
                 const isVisible = index >= startIndex && index < startIndex + Math.floor(itemsPerPage);
+                // On mobile, "isEdge" projects are the ones immediately left and right of center
                 const isEdge = index === startIndex - 1 || index === startIndex + Math.ceil(itemsPerPage);
                 
                 return (
@@ -160,7 +154,7 @@ export function Projects() {
                     className="flex-shrink-0 px-3 md:px-4 py-4"
                     style={{ width: `${100 / itemsPerPage}%` }}
                     animate={{
-                      opacity: isVisible ? 1 : (isEdge ? 0.4 : 0.1),
+                      opacity: isVisible ? 1 : (isEdge ? 0.4 : 0),
                       filter: isVisible ? 'blur(0px)' : 'blur(8px)',
                       scale: isVisible ? 1 : 0.9,
                     }}
@@ -196,9 +190,9 @@ export function Projects() {
         </div>
       </div>
 
-      {/* Modal remains unchanged (Strictly Dark Mode) */}
+      {/* Modal remains unchanged */}
       <Dialog open={!!selectedProject} onOpenChange={() => setSelectedProject(null)}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-slate-900 border-slate-700 text-white">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-slate-900 border-slate-700 text-white shadow-2xl">
           {selectedProject && (
             <div className="animate-in fade-in zoom-in duration-300 p-0">
               <div className="relative h-64 -mx-6 -mt-6 mb-6 overflow-hidden bg-slate-800">
@@ -210,23 +204,29 @@ export function Projects() {
                 </div>
               </div>
               <div className="space-y-6">
-                <DialogDescription className="text-base text-slate-300 leading-relaxed">{selectedProject.fullDescription}</DialogDescription>
-                <div>
-                  <h4 className="font-bold text-sky-400 mb-3 uppercase tracking-widest text-xs">Key Features</h4>
-                  <ul className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {selectedProject.features.map((f, i) => (
-                      <li key={i} className="text-sm text-slate-400 flex items-start gap-2">
-                        <div className="w-1.5 h-1.5 rounded-full bg-sky-400 mt-1.5 shrink-0" /> {f}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                <div>
-                  <h4 className="font-bold text-sky-400 mb-3 uppercase tracking-widest text-xs">Technologies</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {selectedProject.technologies.map(t => (
-                      <Badge key={t} variant="outline" className="border-sky-500/30 text-sky-400 bg-sky-500/10">{t}</Badge>
-                    ))}
+                <DialogDescription className="text-base text-slate-300 leading-relaxed text-left">
+                  {selectedProject.fullDescription}
+                </DialogDescription>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <h4 className="font-bold text-sky-400 mb-3 uppercase tracking-widest text-xs flex items-center gap-2">
+                      <Zap className="h-4 w-4" /> Key Features
+                    </h4>
+                    <ul className="space-y-2">
+                      {selectedProject.features.map((f, i) => (
+                        <li key={i} className="text-sm text-slate-400 flex items-start gap-2">
+                          <div className="w-1.5 h-1.5 rounded-full bg-sky-400 mt-1.5 shrink-0" /> {f}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-sky-400 mb-3 uppercase tracking-widest text-xs">Technologies</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedProject.technologies.map(t => (
+                        <Badge key={t} variant="outline" className="border-sky-500/30 text-sky-400 bg-sky-500/10">{t}</Badge>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
