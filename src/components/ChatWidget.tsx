@@ -77,9 +77,10 @@ const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
 
 const getCurrentTime = () => new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 const INITIAL_MESSAGE = "Hello! I'm Karl. Thanks for visiting my portfolio. What would you like to know about my engineering background or projects?";
+// UPDATED QUESTION 2
 const SUGGESTED_QUESTIONS = [
   "What makes your BMEE joint degree program unique?",
-  "What is the focus of your ongoing thesis research?",
+  "How do I navigate through your portfolio?",
   "Can I see your resume?"
 ];
 
@@ -124,11 +125,9 @@ export function ChatWidget() {
   ]);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  
   const isFirstLoad = useRef(true);
-  
-  // FIX 1: We use a ref to track the open state without triggering re-renders in the useEffect
   const isOpenRef = useRef(isOpen);
+
   useEffect(() => {
     isOpenRef.current = isOpen;
   }, [isOpen]);
@@ -137,8 +136,6 @@ export function ChatWidget() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // FIX 2: This effect NOW ONLY runs when the `messages` array changes. 
-  // It completely ignores when you open/close the chat.
   useEffect(() => {
     if (isFirstLoad.current) {
       const timer = setTimeout(() => {
@@ -148,22 +145,19 @@ export function ChatWidget() {
       return () => clearTimeout(timer);
     } else {
       const lastMessage = messages[messages.length - 1];
-      // Only show the badge if the AI just sent a message AND the chat is currently closed
       if (lastMessage && lastMessage.role === 'model' && !isOpenRef.current) {
         setHasUnread(true);
       }
     }
   }, [messages]); 
 
-  // FIX 3: Explicit open and close functions to guarantee the badge clears properly
   const handleOpenChat = () => {
     setIsOpen(true);
-    setHasUnread(false); // Mark as read!
+    setHasUnread(false);
   };
 
   const handleCloseChat = () => {
     setIsOpen(false);
-    // Notice we do NOT touch the `hasUnread` state here. It stays false.
   };
 
   const handleSend = async (e?: React.FormEvent, presetQuery?: string) => {
@@ -172,7 +166,6 @@ export function ChatWidget() {
     if (!userText.trim() || isLoading) return;
 
     setMessage('');
-    
     setMessages(prev => [...prev, { role: 'user', text: userText, timestamp: getCurrentTime() }]);
     setIsLoading(true);
 
@@ -192,23 +185,22 @@ DATABASE ABOUT YOU (KARL):
 ${JSON.stringify(KARL_DATABASE)}
 
 STRICT RESPONSE RULES (HIGHEST PRIORITY):
-- Speak in the first person (e.g., "I worked on...", "My thesis is...").
+- Speak in the first person.
 - Answer MUST be concise, direct, and technical.
-- Answer professionally, avoiding any casual language or filler.
 - Maximum 2-3 sentences unless explicitly asked for more.
 - Only answer what is asked! No extra context.
+
+PORTFOLIO NAVIGATION GUIDELINE:
+If asked "How do I navigate through your portfolio?" or similar, answer with exactly this:
+"You can explore my sections via the navigation bar: About, Projects, Skills, Organizations, and Contact. This site also features three performance modes located in the header: Visual (full animations), Performance (optimized motion), and Minimal (static text). Do you have any other questions?"
 
 ACTION LINKS (CRITICAL):
 - If the user asks for your Resume/CV, you MUST reply using exactly this markdown format: [Download CV](/Karl_Espino_Resume.pdf)
 - If the user asks for your Email, you MUST reply using exactly this markdown format: [kpcespino@gmail.com](mailto:kpcespino@gmail.com)
-- You are allowed to embed these links naturally in your 2-3 sentence response.
 
 FORMATTING:
 - Plain text only (except for the Action Links above).
 - No asterisks, no bold, no emojis.
-
-FAILSAFE:
-If response exceeds guidelines, rewrite it shorter before sending.
 ` }]
           }
         });
@@ -249,7 +241,6 @@ If response exceeds guidelines, rewrite it shorter before sending.
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             className="mb-4 w-80 sm:w-96 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col h-[500px]"
           >
-            {/* MESSENGER STYLE HEADER */}
             <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 p-4 flex items-center justify-between shadow-sm z-10">
               <div className="flex items-center gap-3">
                 <div className="relative">
@@ -266,17 +257,12 @@ If response exceeds guidelines, rewrite it shorter before sending.
               </button>
             </div>
 
-            {/* CHAT CONTENT */}
             <div className="flex-1 p-4 overflow-y-auto flex flex-col gap-5 bg-slate-50 dark:bg-slate-950/50">
               {messages.map((msg, idx) => (
                 <div key={idx} className={`flex gap-2 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
-                  
-                  {/* Avatar next to Karl's messages */}
                   {msg.role === 'model' && (
                     <img src="/hero-portrait-chat.jpg" alt="Karl" className="w-7 h-7 rounded-full object-cover self-end mb-5 shadow-sm" />
                   )}
-                  
-                  {/* Bubble & Timestamp Container */}
                   <div className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'} max-w-[75%]`}>
                     <div className={`p-3 text-[14px] shadow-sm ${
                       msg.role === 'user' 
@@ -291,11 +277,9 @@ If response exceeds guidelines, rewrite it shorter before sending.
                       {msg.timestamp}
                     </span>
                   </div>
-
                 </div>
               ))}
 
-              {/* MESSENGER STYLE TYPING INDICATOR */}
               {isLoading && (
                 <div className="flex gap-2">
                   <img src="/hero-portrait-chat.jpg" alt="Karl" className="w-7 h-7 rounded-full object-cover self-end mb-5 shadow-sm" />
@@ -310,7 +294,6 @@ If response exceeds guidelines, rewrite it shorter before sending.
               <div ref={messagesEndRef} />
             </div>
 
-            {/* VERTICAL SUGGESTED QUESTIONS */}
             {messages.length === 1 && !isLoading && (
               <div className="px-4 pb-3 flex flex-col gap-2 items-end bg-slate-50 dark:bg-slate-950/50">
                 {SUGGESTED_QUESTIONS.map((question) => (
@@ -325,7 +308,6 @@ If response exceeds guidelines, rewrite it shorter before sending.
               </div>
             )}
 
-            {/* INPUT AREA */}
             <form onSubmit={handleSend} className="p-3 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex gap-2 items-center">
               <input
                 type="text"
@@ -352,7 +334,6 @@ If response exceeds guidelines, rewrite it shorter before sending.
           {isOpen ? <X className="w-6 h-6" /> : <MessageSquare className="w-6 h-6" />}
         </motion.button>
         
-        {/* THE UNREAD NOTIFICATION BADGE */}
         <AnimatePresence>
           {hasUnread && (
             <motion.div
