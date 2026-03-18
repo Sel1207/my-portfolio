@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, ReactNode, MouseEvent } from 'react';
-import { motion, useInView } from 'framer-motion';
-// 1. Connect to the global performance engine
+import { motion, useInView, useMotionValue, useSpring, useTransform, useAnimationFrame } from 'framer-motion';
+// Connect to the global Tri-Mode performance engine
 import { usePerformance } from '@/context/PerformanceContext'; 
 import { Button } from '@/components/ui/button';
 import { 
@@ -19,7 +19,7 @@ import {
   X 
 } from 'lucide-react';
 
-// --- CUSTOM TYPEWRITER (Untouched, runs smoothly in both modes) ---
+// --- CUSTOM TYPEWRITER (Untouched, runs smoothly in all modes) ---
 function TypewriterEffect() {
   const strings = [
     'BS/MS Electrical Engineering Student',
@@ -117,8 +117,10 @@ function OrdinalSequence({ sequence, duration = 1.5 }: { sequence: string[]; dur
 function Magnetic({ children }: { children: ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);
   const [position, setPosition] = useState({ x: 0, y: 0 });
+  const { isMinimal } = usePerformance();
 
   const handleMouseMove = (e: MouseEvent<HTMLDivElement>) => {
+    if (isMinimal) return; // TRI-MODE: Disable magnetic effect entirely in Minimal mode
     const { clientX, clientY } = e;
     if (ref.current) {
       const { height, width, left, top } = ref.current.getBoundingClientRect();
@@ -169,11 +171,10 @@ interface StatItemProps {
 function StatItem({ value, label, suffix = '', tooltip, isCounter = false }: StatItemProps) {
   return (
     <motion.div variants={fadeInUp} className="text-center relative group cursor-help px-1">
-      {/* MOBILE UI FIX: Greatly reduced mobile font size (text-lg) to fit 4 in a row, expanding to text-4xl on desktop */}
+      {/* Reduced mobile font size to fit 4 in a row smoothly */}
       <div className="text-lg sm:text-3xl md:text-4xl font-bold text-accent-blue transition-colors group-hover:text-blue-400 leading-tight truncate">
         {isCounter && typeof value === 'number' ? <Counter end={value} /> : value}{suffix}
       </div>
-      {/* MOBILE UI FIX: Reduced label to text-[10px] for mobile */}
       <div className="text-[10px] sm:text-xs md:text-sm text-muted-foreground mt-1 transition-colors group-hover:text-foreground leading-tight">
         {label}
       </div>
@@ -195,8 +196,65 @@ function StatItem({ value, label, suffix = '', tooltip, isCounter = false }: Sta
 export function Hero() {
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   
-  // 2. Destructure global performance state
-  const { isLowPower } = usePerformance();
+  // Destructure global Tri-Mode state
+  const { isLowPower, isMinimal } = usePerformance();
+
+  // --- SEAMLESS PHYSICS ENGINE FOR FLOATING & GRADIENTS ---
+  const timeRef = useRef(0);
+  const gradientPos = useMotionValue(0);
+  const gradientDirection = useRef(1);
+
+  const floatImgY = useMotionValue(0);
+  const floatMedalY = useMotionValue(0);
+  const blobScale = useMotionValue(1);
+  const blobOpacity = useMotionValue(0.3);
+
+  // TRI-MODE THROTTLE: Minimal = 0 (Stop), Performance = 0.2 (Slow), Visual = 1 (Fast)
+  const speedMultiplier = useSpring(isMinimal ? 0 : isLowPower ? 0.2 : 1, { stiffness: 40, damping: 20 });
+
+  useEffect(() => {
+    speedMultiplier.set(isMinimal ? 0 : isLowPower ? 0.2 : 1);
+  }, [isMinimal, isLowPower, speedMultiplier]);
+
+  useAnimationFrame((time, delta) => {
+    if (delta > 100) delta = 16; 
+    const dSec = delta / 1000;
+    const m = speedMultiplier.get();
+
+    if (isMinimal) {
+      // SETTLE SMOOTHLY: Mathematically glide everything back to its resting state
+      const currentGPos = gradientPos.get();
+      gradientPos.set(currentGPos + (0 - currentGPos) * 0.05); // Text gradient settles to 0% (Blue)
+      gradientDirection.current = 1;
+
+      floatImgY.set(floatImgY.get() + (0 - floatImgY.get()) * 0.05); // Portrait settles to center
+      floatMedalY.set(floatMedalY.get() + (0 - floatMedalY.get()) * 0.05); // Medal settles to center
+      blobScale.set(blobScale.get() + (1 - blobScale.get()) * 0.05); 
+      blobOpacity.set(blobOpacity.get() + (0 - blobOpacity.get()) * 0.05); // Glows fade to 0 opacity
+    } else {
+      // 1. Text Gradient Ping-Pong Math
+      let gP = gradientPos.get() + (40 * m * dSec * gradientDirection.current);
+      if (gP >= 100) {
+        gP = 100 - (gP - 100);
+        gradientDirection.current = -1;
+      } else if (gP <= 0) {
+        gP = Math.abs(gP);
+        gradientDirection.current = 1;
+      }
+      gradientPos.set(gP);
+
+      // 2. Continuous Sine Waves for Floating & Pulsing physics
+      timeRef.current += dSec * m;
+      const t = timeRef.current;
+      floatImgY.set(Math.sin(t * 1.04) * -7.5 - 7.5); 
+      floatMedalY.set(Math.sin(t * 2.09) * -2.5 - 2.5);
+      blobScale.set(1.1 + Math.sin(t * 0.78) * 0.1);
+      blobOpacity.set(0.4 + Math.sin(t * 0.78) * 0.1);
+    }
+  });
+
+  const bgPosString = useTransform(gradientPos, v => `${v}% 50%`);
+  // --------------------------------------------------
 
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
@@ -211,20 +269,15 @@ export function Hero() {
   return (
     <section className="relative min-h-screen flex flex-col justify-center pt-32 md:pt-20 pb-16 overflow-hidden bg-background">
       
-      {/* NATIVE CSS ANIMATION ENGINE (Seamless transitions without teleporting) */}
-      <style dangerouslySetInnerHTML={{__html: `
-        @keyframes bg-spin { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
-        @keyframes float-img { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
-        @keyframes float-medal { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
-        @keyframes blob-pulse { 0%, 100% { transform: scale(1); opacity: 0.3; } 50% { transform: scale(1.2); opacity: 0.5; } }
-      `}} />
-
-      {/* Animated Background Blobs - Smoothly transition to static dim in Low Power mode */}
-      <div 
-        className={`absolute top-1/4 right-0 w-96 h-96 bg-accent-blue/10 rounded-full transition-all duration-1000 ${
-          isLowPower ? 'blur-2xl opacity-20' : 'blur-3xl opacity-30'
+      {/* Animated Background Blobs - Handled exclusively by the smooth physics engine decay */}
+      <motion.div 
+        className={`absolute top-1/4 right-0 w-96 h-96 bg-accent-blue/10 rounded-full transition-[filter] duration-1000 ${
+          isLowPower ? 'blur-2xl' : 'blur-3xl'
         }`}
-        style={{ animation: isLowPower ? 'none' : 'blob-pulse 8s infinite ease-in-out' }}
+        style={{ 
+          scale: blobScale, 
+          opacity: blobOpacity 
+        }}
       />
       
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full flex-grow flex items-center z-10">
@@ -238,11 +291,11 @@ export function Hero() {
             animate="animate"
           >
             <motion.div variants={fadeInUp} className="mb-6">
-              <motion.div whileHover={{ scale: 1.05 }} className="inline-block">
+              <motion.div whileHover={isMinimal ? {} : { scale: 1.05 }} className="inline-block">
                 <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white dark:bg-slate-800 shadow-lg border border-slate-200 dark:border-slate-700 transition-colors hover:bg-slate-50 dark:hover:bg-slate-700/80 cursor-default">
                   <span className="relative flex h-3 w-3">
-                    {/* PERFORMANCE MODE: Downshift from harsh ping to a gentle pulse */}
-                    <span className={`absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75 ${isLowPower ? 'animate-pulse' : 'animate-ping'}`}></span>
+                    {/* TRI-MODE: Hidden on Minimal, Pulse on Low Power, Ping on Visual */}
+                    <span className={`absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75 ${isMinimal ? 'hidden' : isLowPower ? 'animate-pulse' : 'animate-ping'}`}></span>
                     <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
                   </span>
                   <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">
@@ -257,7 +310,7 @@ export function Hero() {
               <p className="text-lg text-muted-foreground mb-2">Hello, I'm</p>
               <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold mb-4 flex flex-col items-start">
                 <span className="text-foreground">Karl Philip</span>
-                <span 
+                <motion.span 
                   className="leading-tight py-2 inline-block w-fit"
                   style={{
                     backgroundImage: "linear-gradient(135deg, rgb(14, 165, 233), rgb(59, 130, 246), rgb(139, 92, 246), rgb(14, 165, 233))",
@@ -266,12 +319,12 @@ export function Hero() {
                     WebkitTextFillColor: "transparent",
                     backgroundClip: "text",
                     color: "transparent",
-                    filter: "drop-shadow(0 0 12px rgba(59, 130, 246, 0.4))",
-                    animation: `bg-spin ${isLowPower ? 12 : 3}s linear infinite` // Native CSS Deceleration
+                    filter: isMinimal ? "none" : "drop-shadow(0 0 12px rgba(59, 130, 246, 0.4))",
+                    backgroundPosition: bgPosString // Seamlessly slows to a halt without teleporting
                   }}
                 >
                   Espino
-                </span>
+                </motion.span>
               </h1>
               
               {/* Custom Typewriter Implementation */}
@@ -290,7 +343,7 @@ export function Hero() {
             {/* CTA BUTTONS */}
             <motion.div variants={fadeInUp} className="flex flex-wrap gap-4 mb-12">
               <Magnetic>
-                <Button size="lg" className="bg-accent-blue hover:scale-105 transition-transform rounded-xl px-8" onClick={() => scrollToSection('projects')}>
+                <Button size="lg" className={`bg-accent-blue rounded-xl px-8 transition-transform ${isMinimal ? '' : 'hover:scale-105'}`} onClick={() => scrollToSection('projects')}>
                   View Projects <ExternalLink className="ml-2 h-4 w-4" />
                 </Button>
               </Magnetic>
@@ -308,10 +361,9 @@ export function Hero() {
                   </Button>
                 </a>
               </Magnetic>
-
             </motion.div>
 
-            {/* STATS GRID - MOBILE UI FIX: Enforced 4 columns on all screen sizes with reduced gap on mobile */}
+            {/* STATS GRID - 4 Columns forced for mobile layout */}
             <motion.div variants={staggerContainer} className="grid grid-cols-4 gap-2 sm:gap-6 w-full">
               <StatItem 
                 value={<OrdinalSequence sequence={['1st', '2nd', '3rd']} />} 
@@ -345,25 +397,26 @@ export function Hero() {
             transition={{ duration: 0.8, delay: 0.4 }}
             className="order-1 lg:order-2 flex justify-center lg:justify-end"
           >
-            {/* Native CSS Floating Animation */}
-            <div 
+            {/* Physics-driven Floating Animation Wrapper - Decays to 0 smoothly on Minimal */}
+            <motion.div 
               className="relative group cursor-zoom-in"
               onClick={() => setIsImageModalOpen(true)}
-              style={{ animation: `float-img ${isLowPower ? 15 : 6}s ease-in-out infinite` }}
+              style={{ y: floatImgY }}
             >
-              {/* Background Glow - Dimmed and locked on Performance Mode */}
-              <div 
-                className={`absolute inset-0 bg-accent-blue/30 rounded-3xl scale-110 transition-all duration-1000 ${
-                  isLowPower ? 'blur-2xl opacity-30' : 'blur-3xl opacity-50'
+              {/* Background Glow - Handled smoothly by blobOpacity going to 0 */}
+              <motion.div 
+                className={`absolute inset-0 bg-accent-blue/30 rounded-3xl scale-110 transition-[filter] duration-1000 ${
+                  isLowPower ? 'blur-2xl' : 'blur-3xl'
                 }`} 
-                style={{ animation: isLowPower ? 'none' : 'blob-pulse 4s infinite ease-in-out' }}
+                style={{ scale: blobScale, opacity: blobOpacity }}
               />
               
               <div className="relative w-72 h-96 sm:w-80 sm:h-[28rem] lg:w-96 lg:h-[32rem] rounded-3xl overflow-hidden border-2 border-white/10 shadow-2xl transition-all duration-300 group-hover:border-accent-blue/30">
+                {/* MINIMAL MODE: Disables image color/scale on hover to save rendering costs */}
                 <img 
                   src="/hero-portrait.jpg" 
                   alt="Karl Philip Espino" 
-                  className="w-full h-full object-cover grayscale-[20%] group-hover:grayscale-0 group-hover:scale-105 transition-all duration-700" 
+                  className={`w-full h-full object-cover transition-all duration-700 ${isMinimal ? '' : 'grayscale-[20%] group-hover:grayscale-0 group-hover:scale-105'}`} 
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
                 
@@ -372,7 +425,7 @@ export function Hero() {
                   <span className="text-xs font-medium text-white">BS/MS Electrical Engineering</span>
                 </div>
 
-                <div className="absolute inset-0 bg-transparent flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20">
+                <div className={`absolute inset-0 bg-transparent flex items-center justify-center opacity-0 transition-opacity duration-300 z-20 ${isMinimal ? '' : 'group-hover:opacity-100'}`}>
                   <div className="flex flex-col items-center gap-3">
                     <div className="bg-white/10 p-4 rounded-full backdrop-blur-sm border border-white/20">
                       <ZoomIn className="h-8 w-8 text-white" />
@@ -382,31 +435,40 @@ export function Hero() {
                 </div>
               </div>
 
-              {/* MEDAL: Slows down gracefully via Native CSS */}
-              <div 
+              {/* MEDAL: Decays to 0 gracefully on Minimal without teleporting */}
+              <motion.div 
                 className="absolute -top-4 -right-4 text-white rounded-2xl p-4 shadow-xl z-30"
                 style={{
                   backgroundImage: "linear-gradient(135deg, rgb(14, 165, 233), rgb(59, 130, 246), rgb(139, 92, 246), rgb(14, 165, 233))",
                   backgroundSize: "300% 300%",
-                  animation: `float-medal ${isLowPower ? 12 : 3}s ease-in-out infinite, bg-spin ${isLowPower ? 12 : 3}s linear infinite`
+                  y: floatMedalY,
+                  backgroundPosition: bgPosString,
+                  filter: isMinimal ? 'none' : 'drop-shadow(0px 10px 15px rgba(14, 165, 233, 0.3))'
                 }}
               >
                 <Award className="h-6 w-6" />
-              </div>
-            </div>
+              </motion.div>
+            </motion.div>
           </motion.div>
         </div>
       </div>
 
-      {/* Scroll indicator */}
+      {/* SCROLL WHEEL: Uses framer-motion logic to settle smoothly when isMinimal is toggled */}
       <motion.div 
         initial={{ opacity: 0 }} 
-        animate={{ opacity: 1 }} 
-        transition={{ delay: 2.5 }} 
-        className="absolute bottom-8 left-1/2 -translate-x-1/2 hidden md:flex flex-col items-center gap-2 z-10 animate-bounce"
+        animate={{ opacity: 1, y: isMinimal ? 0 : [0, 10, 0] }} 
+        transition={{ 
+          delay: 2.5, 
+          y: isMinimal ? { duration: 0.4, ease: "easeOut" } : { duration: 2, repeat: Infinity, ease: "easeInOut" } 
+        }} 
+        className="absolute bottom-8 left-1/2 -translate-x-1/2 hidden md:flex flex-col items-center gap-2 z-10"
       >
         <div className="w-6 h-10 border-2 border-muted-foreground/30 rounded-full flex justify-center">
-          <div className="w-1.5 h-3 bg-accent-blue rounded-full mt-2 animate-pulse" />
+          <motion.div 
+            animate={{ opacity: isMinimal ? 1 : [0.5, 1, 0.5] }}
+            transition={isMinimal ? { duration: 0.4 } : { duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+            className="w-1.5 h-3 bg-accent-blue rounded-full mt-2" 
+          />
         </div>
       </motion.div>
 
@@ -417,7 +479,6 @@ export function Hero() {
 
       {/* IMAGE POPUP MODAL */}
       <Dialog open={isImageModalOpen} onOpenChange={setIsImageModalOpen}>
-        {/* Forced !z-[9999] ensures it strictly sits over the background shield */}
         <DialogContent className="max-w-4xl p-0 bg-slate-900 border-slate-800 overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.5)] !z-[9999] outline-none border-none">
           <button 
             onClick={() => setIsImageModalOpen(false)}

@@ -1,6 +1,6 @@
 import { useRef, useEffect } from 'react';
 import { motion, useMotionValue, useSpring, useTransform, useAnimationFrame } from 'framer-motion';
-// 1. Connect to the global performance engine
+// 1. Connect to the global Tri-Mode performance engine
 import { usePerformance } from '@/context/PerformanceContext'; 
 import { Award, Calendar, Trophy, Sparkles } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -43,20 +43,22 @@ export function Certifications() {
     }
   };
 
-  // 2. Destructure global state
-  const { isLowPower } = usePerformance();
+  // 2. Destructure global Tri-Mode state
+  const { isLowPower, isMinimal } = usePerformance();
 
   // --- SEAMLESS PHYSICS ENGINE ---
   const trace1Y = useMotionValue(-100);
   const trace2Y = useMotionValue(-100);
-  const textGradientPos = useMotionValue(0);
   
-  // The Spring acts as a smooth "throttle" for the animation speed
-  const speedMultiplier = useSpring(isLowPower ? 0.2 : 1, { stiffness: 40, damping: 20 });
+  const gradientPos = useMotionValue(0);
+  const gradientDirection = useRef(1);
+  
+  // TRI-MODE THROTTLE: Minimal = 0 (Stop), Performance = 0.2 (Slow), Visual = 1 (Fast)
+  const speedMultiplier = useSpring(isMinimal ? 0 : isLowPower ? 0.2 : 1, { stiffness: 40, damping: 20 });
 
   useEffect(() => {
-    speedMultiplier.set(isLowPower ? 0.2 : 1);
-  }, [isLowPower, speedMultiplier]);
+    speedMultiplier.set(isMinimal ? 0 : isLowPower ? 0.2 : 1);
+  }, [isMinimal, isLowPower, speedMultiplier]);
 
   useAnimationFrame((time, delta) => {
     if (delta > 100) delta = 16; // Safety catch for tab switching
@@ -73,15 +75,28 @@ export function Certifications() {
     if (y2 >= 100) y2 -= 200;
     trace2Y.set(y2);
 
-    // Text Gradient Math
-    let bgP = textGradientPos.get() + (25 * m * dSec);
-    if (bgP >= 100) bgP -= 100;
-    textGradientPos.set(bgP);
+    // Text Gradient Math (Converted to Ping-Pong for smooth settling)
+    if (isMinimal) {
+      // SETTLE AT BLUE: Smoothly glide the gradient back to 0% without teleporting
+      const currentGPos = gradientPos.get();
+      gradientPos.set(currentGPos + (0 - currentGPos) * 0.1); 
+      gradientDirection.current = 1; 
+    } else {
+      let gP = gradientPos.get() + (40 * m * dSec * gradientDirection.current);
+      if (gP >= 100) {
+        gP = 100 - (gP - 100);
+        gradientDirection.current = -1;
+      } else if (gP <= 0) {
+        gP = Math.abs(gP);
+        gradientDirection.current = 1;
+      }
+      gradientPos.set(gP);
+    }
   });
 
   const t1 = useTransform(trace1Y, v => `${v}%`);
   const t2 = useTransform(trace2Y, v => `${v}%`);
-  const bgPosString = useTransform(textGradientPos, v => `${v}% 50%`);
+  const bgPosString = useTransform(gradientPos, v => `${v}% 50%`);
   // -------------------------------
 
   return (
@@ -89,26 +104,20 @@ export function Certifications() {
       
       {/* --- CONTINUOUS CIRCUIT BOARD BACKGROUND EFFECTS --- */}
       <div 
-        className="absolute inset-0 opacity-[0.03] dark:opacity-[0.08] pointer-events-none transition-opacity" 
+        className={`absolute inset-0 pointer-events-none transition-opacity duration-1000 ${isMinimal ? 'opacity-0' : 'opacity-[0.03] dark:opacity-[0.08]'}`} 
         style={{ 
           backgroundImage: 'linear-gradient(rgba(148, 163, 184, 0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(148, 163, 184, 0.5) 1px, transparent 1px)', 
           backgroundSize: '40px 40px' 
         }} 
       />
 
-      {/* BACKGROUND GLOWS: Smoothly dim and reduce blur radius in Performance Mode */}
-      <div className={`absolute top-0 right-1/4 w-[500px] h-[500px] rounded-full pointer-events-none transition-all duration-1000 ${isLowPower ? 'bg-sky-500/5 blur-[60px] opacity-40' : 'bg-sky-500/5 blur-[120px] opacity-100'}`} />
-      <div className={`absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full pointer-events-none transition-all duration-1000 ${isLowPower ? 'bg-blue-500/5 blur-[50px] opacity-40' : 'bg-blue-500/5 blur-[100px] opacity-100'}`} />
+      {/* BACKGROUND GLOWS: Smoothly dim in Performance Mode, vanish in Minimal Mode */}
+      <div className={`absolute top-0 right-1/4 w-[500px] h-[500px] rounded-full pointer-events-none transition-all duration-1000 ${isMinimal ? 'opacity-0' : isLowPower ? 'bg-sky-500/5 blur-[60px] opacity-40' : 'bg-sky-500/5 blur-[120px] opacity-100'}`} />
+      <div className={`absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full pointer-events-none transition-all duration-1000 ${isMinimal ? 'opacity-0' : isLowPower ? 'bg-blue-500/5 blur-[50px] opacity-40' : 'bg-blue-500/5 blur-[100px] opacity-100'}`} />
 
-      {/* CIRCUIT TRACES: Tied to physics engine for zero-teleport deceleration */}
-      <motion.div 
-        className="absolute top-0 left-[15%] w-[1px] h-full bg-gradient-to-b from-transparent via-sky-500/20 dark:via-sky-400/40 to-transparent shadow-[0_0_10px_rgba(56,189,248,0.1)] dark:shadow-[0_0_10px_#38bdf8]"
-        style={{ y: t1 }}
-      />
-      <motion.div 
-        className="absolute top-0 right-[20%] w-[1px] h-full bg-gradient-to-b from-transparent via-blue-500/20 dark:via-blue-500/40 to-transparent shadow-[0_0_10px_rgba(59,130,246,0.1)] dark:shadow-[0_0_10px_#3b82f6]"
-        style={{ y: t2 }}
-      />
+      {/* CIRCUIT TRACES: Fades to 0 opacity in Minimal Mode */}
+      <motion.div animate={{ opacity: isMinimal ? 0 : 1 }} transition={{ duration: 1 }} className="absolute top-0 left-[15%] w-[1px] h-full bg-gradient-to-b from-transparent via-sky-500/20 dark:via-sky-400/40 to-transparent shadow-[0_0_10px_rgba(56,189,248,0.1)] dark:shadow-[0_0_10px_#38bdf8]" style={{ y: t1 }} />
+      <motion.div animate={{ opacity: isMinimal ? 0 : 1 }} transition={{ duration: 1 }} className="absolute top-0 right-[20%] w-[1px] h-full bg-gradient-to-b from-transparent via-blue-500/20 dark:via-blue-500/40 to-transparent shadow-[0_0_10px_rgba(59,130,246,0.1)] dark:shadow-[0_0_10px_#3b82f6]" style={{ y: t2 }} />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         
@@ -120,13 +129,13 @@ export function Certifications() {
           className="text-center max-w-2xl mx-auto mb-16"
         >
           {/* Shimmer Badge */}
-          <motion.div whileHover={{ scale: 1.05 }} className="inline-block mb-4 cursor-default">
+          <motion.div whileHover={isMinimal ? {} : { scale: 1.05 }} className="inline-block mb-4 cursor-default">
             <div className="relative overflow-hidden inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-sky-500/10 border border-sky-500/20">
-              <span className={`w-2 h-2 rounded-full bg-sky-500 relative z-10 ${isLowPower ? '' : 'animate-pulse'}`} />
+              <span className={`w-2 h-2 rounded-full bg-sky-500 relative z-10 ${isMinimal || isLowPower ? '' : 'animate-pulse'}`} />
               <span className="text-sky-600 dark:text-sky-400 text-xs font-bold uppercase tracking-widest relative z-10">Verification</span>
               
-              {/* FAST SHINE: 0.8s duration, completely disabled in Performance Mode */}
-              {!isLowPower && (
+              {/* FAST SHINE: Cleanly disabled in Performance & Minimal Mode */}
+              {!isLowPower && !isMinimal && (
                 <motion.div 
                   className="absolute top-0 bottom-0 w-[150%] bg-gradient-to-r from-transparent via-sky-300/40 dark:via-white/20 to-transparent -skew-x-12 z-0"
                   animate={{ left: ['-100%', '200%'] }}
@@ -136,6 +145,7 @@ export function Certifications() {
             </div>
           </motion.div>
 
+          {/* Seamless Gradient Settling via Physics Engine */}
           <h2 className="text-4xl md:text-5xl font-bold mb-4 text-foreground tracking-tight">
             Certifications &{' '}
             <motion.span 
@@ -147,7 +157,7 @@ export function Certifications() {
                 WebkitTextFillColor: "transparent",
                 backgroundClip: "text",
                 color: "transparent",
-                backgroundPosition: bgPosString // Driven by physics engine
+                backgroundPosition: bgPosString // Decays to 0% smoothly on Minimal
               }}
             >
               Achievements
@@ -166,11 +176,12 @@ export function Certifications() {
               viewport={{ once: true }} 
               transition={{ delay: index * 0.1 }}
             >
+              {/* Hover transition borders preserved, but inner glow hidden for performance modes */}
               <SpotlightCard className="p-6 text-center h-full border border-border/50 hover:border-sky-500/40 transition-all group flex flex-col justify-center relative overflow-hidden bg-card/40 backdrop-blur-sm">
-                <div className="absolute inset-0 bg-gradient-to-br from-sky-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+                <div className={`absolute inset-0 bg-gradient-to-br from-sky-500/5 to-transparent opacity-0 transition-opacity duration-500 pointer-events-none ${isLowPower || isMinimal ? 'hidden' : 'group-hover:opacity-100'}`} />
                 
-                {/* PERFORMANCE MODE: Disable hover scaling for CPU savings */}
-                <div className={`text-4xl lg:text-5xl font-extrabold tracking-tight mb-2 relative z-10 transition-transform duration-300 ${isLowPower ? '' : 'group-hover:scale-110'}`}>
+                {/* PERFORMANCE/MINIMAL MODE: Disable hover scaling for CPU savings */}
+                <div className={`text-4xl lg:text-5xl font-extrabold tracking-tight mb-2 relative z-10 transition-transform duration-300 ${isLowPower || isMinimal ? '' : 'group-hover:scale-110'}`}>
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-500 to-blue-600 dark:from-sky-400 dark:to-blue-500 group-hover:opacity-80 transition-opacity">
                     {achievement.count}
                   </span>
@@ -192,12 +203,13 @@ export function Certifications() {
               viewport={{ once: true }} 
               transition={{ delay: index * 0.1 }}
             >
+              {/* Standard color hovers preserved for UX consistency across modes */}
               <SpotlightCard className="p-6 md:p-8 h-full flex flex-col border border-border/50 hover:border-sky-500/30 transition-colors group bg-card">
                 
                 <div className="flex items-start justify-between mb-6">
                   <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-800/80 flex items-center justify-center border border-border group-hover:bg-sky-500/10 group-hover:border-sky-500/30 transition-colors shrink-0 shadow-sm relative overflow-hidden">
-                    {/* Inner glow hidden on low power */}
-                    <div className={`absolute inset-0 bg-gradient-to-br from-sky-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity ${isLowPower ? 'hidden' : ''}`} />
+                    {/* Inner glow hidden on low power/minimal */}
+                    <div className={`absolute inset-0 bg-gradient-to-br from-sky-500/10 to-transparent opacity-0 transition-opacity ${isLowPower || isMinimal ? 'hidden' : 'group-hover:opacity-100'}`} />
                     {cert.title.includes('Scholar') ? (
                       <Trophy className="h-6 w-6 text-sky-500 dark:text-sky-400 relative z-10" />
                     ) : (
@@ -226,7 +238,7 @@ export function Certifications() {
 
                 {cert.credential && (
                   <div className="mt-4 text-xs font-bold uppercase tracking-wider text-sky-600 dark:text-sky-300 bg-sky-50 dark:bg-sky-500/10 rounded-md px-3 py-2 text-center border border-sky-100 dark:border-sky-500/20 group-hover:border-sky-300 dark:group-hover:border-sky-500/40 group-hover:bg-sky-100 dark:group-hover:bg-sky-500/20 transition-all flex items-center justify-center gap-2">
-                    <Sparkles className="w-3.5 h-3.5" />
+                    <Sparkles className={`w-3.5 h-3.5 ${isMinimal ? 'opacity-0' : ''}`} />
                     {cert.credential}
                   </div>
                 )}

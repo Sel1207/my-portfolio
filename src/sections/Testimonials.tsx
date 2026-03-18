@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence, useMotionValue, useSpring, useTransform, useAnimationFrame } from 'framer-motion';
 import { useScrollReveal } from '@/hooks/useScrollReveal';
-// 1. Connect to the global performance engine
+// 1. Connect to the global Tri-Mode performance engine
 import { usePerformance } from '@/context/PerformanceContext'; 
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, Quote, Star } from 'lucide-react';
@@ -56,8 +56,46 @@ export function Testimonials() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
   
-  // 2. Destructure global state
-  const { isLowPower } = usePerformance();
+  // 2. Destructure global Tri-Mode state
+  const { isLowPower, isMinimal } = usePerformance();
+
+  // --- SEAMLESS PHYSICS ENGINE FOR ALL GRADIENTS ---
+  const gradientPos = useMotionValue(0);
+  const gradientDirection = useRef(1);
+
+  // TRI-MODE THROTTLE: Minimal = 0 (Stop), Performance = 0.2 (Slow), Visual = 1 (Fast)
+  const speedMultiplier = useSpring(isMinimal ? 0 : isLowPower ? 0.2 : 1, { stiffness: 40, damping: 20 });
+
+  useEffect(() => {
+    speedMultiplier.set(isMinimal ? 0 : isLowPower ? 0.2 : 1);
+  }, [isMinimal, isLowPower, speedMultiplier]);
+
+  useAnimationFrame((time, delta) => {
+    if (delta > 100) delta = 16; // Safety catch for browser tab switching
+    const dSec = delta / 1000;
+    const m = speedMultiplier.get();
+
+    if (isMinimal) {
+      // SETTLE AT BLUE: Smoothly glide the gradient back to 0% without teleporting
+      const currentGPos = gradientPos.get();
+      gradientPos.set(currentGPos + (0 - currentGPos) * 0.1); // Smooth decay factor
+      gradientDirection.current = 1; // Reset direction for when it turns back on
+    } else {
+      // Ping-Pong Gradient Math (0% -> 100% -> 0%)
+      let gP = gradientPos.get() + (40 * m * dSec * gradientDirection.current);
+      if (gP >= 100) {
+        gP = 100 - (gP - 100);
+        gradientDirection.current = -1;
+      } else if (gP <= 0) {
+        gP = Math.abs(gP);
+        gradientDirection.current = 1;
+      }
+      gradientPos.set(gP);
+    }
+  });
+
+  const bgPosString = useTransform(gradientPos, v => `${v}% 50%`);
+  // --------------------------------------------------
 
   // SMART AUTO-PLAY LOGIC
   useEffect(() => {
@@ -90,23 +128,18 @@ export function Testimonials() {
       ref={sectionRef}
       className="relative py-24 lg:py-32 bg-slate-950 overflow-hidden text-slate-300"
     >
-      {/* NATIVE CSS ANIMATION ENGINE (Seamless transitions without teleporting) */}
-      <style dangerouslySetInnerHTML={{__html: `
-        @keyframes bg-spin { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
-      `}} />
-
-      {/* Minimalist Background Effects (Permanently Dark) */}
+      {/* Minimalist Background Effects - Fades out entirely in Minimal Mode */}
       <div 
-        className="absolute inset-0 opacity-10 pointer-events-none" 
+        className={`absolute inset-0 pointer-events-none transition-opacity duration-1000 ${isMinimal ? 'opacity-0' : 'opacity-10'}`} 
         style={{ 
           backgroundImage: 'linear-gradient(rgba(148, 163, 184, 0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(148, 163, 184, 0.2) 1px, transparent 1px)', 
           backgroundSize: '40px 40px' 
         }} 
       />
       
-      {/* BACKGROUND GLOWS: Smoothly dim and reduce blur radius in Performance Mode */}
-      <div className={`absolute top-1/4 left-0 w-[500px] h-[500px] rounded-full pointer-events-none transition-all duration-1000 ${isLowPower ? 'bg-sky-500/5 blur-[60px] opacity-40' : 'bg-sky-500/5 blur-[120px] opacity-100'}`} />
-      <div className={`absolute bottom-1/4 right-0 w-[500px] h-[500px] rounded-full pointer-events-none transition-all duration-1000 ${isLowPower ? 'bg-blue-500/5 blur-[60px] opacity-40' : 'bg-blue-500/5 blur-[120px] opacity-100'}`} />
+      {/* BACKGROUND GLOWS: Smoothly dim in Performance, fade to 0 in Minimal Mode */}
+      <div className={`absolute top-1/4 left-0 w-[500px] h-[500px] rounded-full pointer-events-none transition-all duration-1000 ${isMinimal ? 'opacity-0' : isLowPower ? 'bg-sky-500/5 blur-[60px] opacity-40' : 'bg-sky-500/5 blur-[120px] opacity-100'}`} />
+      <div className={`absolute bottom-1/4 right-0 w-[500px] h-[500px] rounded-full pointer-events-none transition-all duration-1000 ${isMinimal ? 'opacity-0' : isLowPower ? 'bg-blue-500/5 blur-[60px] opacity-40' : 'bg-blue-500/5 blur-[120px] opacity-100'}`} />
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 z-10">
         
@@ -118,13 +151,13 @@ export function Testimonials() {
           className="text-center max-w-2xl mx-auto mb-16"
         >
           {/* Uniform Shimmer Badge */}
-          <motion.div whileHover={{ scale: 1.05 }} className="inline-block mb-4 cursor-default">
+          <motion.div whileHover={isMinimal ? {} : { scale: 1.05 }} className="inline-block mb-4 cursor-default">
             <div className="relative overflow-hidden inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-sky-500/10 border border-sky-500/20">
-              <span className={`w-2 h-2 rounded-full bg-sky-500 relative z-10 ${isLowPower ? '' : 'animate-pulse'}`} />
+              <span className={`w-2 h-2 rounded-full bg-sky-500 relative z-10 ${isMinimal || isLowPower ? '' : 'animate-pulse'}`} />
               <span className="text-sky-400 text-xs font-bold uppercase tracking-widest relative z-10">Testimonials</span>
               
-              {/* FAST SHINE: 0.8s duration, cleanly removed in Performance Mode */}
-              {!isLowPower && (
+              {/* FAST SHINE: Cleanly removed in Performance & Minimal Mode */}
+              {!isLowPower && !isMinimal && (
                 <motion.div 
                   className="absolute top-0 bottom-0 w-[150%] bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12 z-0"
                   animate={{ left: ['-100%', '200%'] }}
@@ -134,10 +167,10 @@ export function Testimonials() {
             </div>
           </motion.div>
 
-          {/* Uniform Gradient Header */}
+          {/* Uniform Gradient Header Wired to Physics Engine */}
           <h2 className="text-4xl md:text-5xl font-bold text-white mb-4 tracking-tight">
             What Others{' '}
-            <span 
+            <motion.span 
               className="inline-block"
               style={{
                 backgroundImage: "linear-gradient(135deg, rgb(14, 165, 233), rgb(59, 130, 246), rgb(139, 92, 246), rgb(14, 165, 233))",
@@ -146,11 +179,11 @@ export function Testimonials() {
                 WebkitTextFillColor: "transparent",
                 backgroundClip: "text",
                 color: "transparent",
-                animation: `bg-spin ${isLowPower ? 12 : 4}s linear infinite` // Native CSS deceleration
+                backgroundPosition: bgPosString // Settles to 0% smoothly on Minimal Mode
               }}
             >
               Say
-            </span>
+            </motion.span>
           </h2>
           <p className="text-slate-400 text-lg">
             Feedback from professors, mentors, and colleagues who have worked with me.
@@ -172,11 +205,11 @@ export function Testimonials() {
             onMouseLeave={() => setIsAutoPlaying(true)}
           >
             
-            {/* Top Glowing Accent Line */}
-            <div className="absolute top-0 left-10 right-10 h-[2px] bg-gradient-to-r from-transparent via-sky-500/50 to-transparent" />
+            {/* Top Glowing Accent Line - Hidden in Minimal Mode */}
+            <div className={`absolute top-0 left-10 right-10 h-[2px] bg-gradient-to-r from-transparent via-sky-500/50 to-transparent transition-opacity duration-1000 ${isMinimal ? 'opacity-0' : 'opacity-100'}`} />
 
             {/* Quote Icon */}
-            <div className="absolute -top-6 left-8 w-12 h-12 rounded-xl bg-gradient-to-br from-sky-400 to-blue-600 flex items-center justify-center shadow-lg shadow-sky-500/30">
+            <div className={`absolute -top-6 left-8 w-12 h-12 rounded-xl bg-gradient-to-br from-sky-400 to-blue-600 flex items-center justify-center ${isMinimal ? '' : 'shadow-lg shadow-sky-500/30'}`}>
               <Quote className="h-6 w-6 text-white" />
             </div>
 
@@ -185,9 +218,9 @@ export function Testimonials() {
               <AnimatePresence mode="wait">
                 <motion.div
                   key={currentIndex}
-                  initial={{ opacity: 0, x: 20 }}
+                  initial={{ opacity: 0, x: isMinimal ? 0 : 20 }}
                   animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
+                  exit={{ opacity: 0, x: isMinimal ? 0 : -20 }}
                   transition={{ duration: 0.4, ease: "easeInOut" }}
                 >
                   {/* Rating */}
@@ -197,7 +230,7 @@ export function Testimonials() {
                         key={i}
                         className={`h-5 w-5 ${
                           i < currentTestimonial.rating
-                            ? 'text-yellow-400 fill-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.5)]'
+                            ? `text-yellow-400 fill-yellow-400 ${isMinimal ? '' : 'drop-shadow-[0_0_8px_rgba(250,204,21,0.5)]'}`
                             : 'text-slate-700'
                         }`}
                       />
@@ -223,7 +256,7 @@ export function Testimonials() {
                     className="flex items-center gap-4"
                   >
                     {/* Avatar placeholder */}
-                    <div className="w-14 h-14 rounded-full bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400 font-bold text-xl shadow-[0_0_15px_rgba(56,189,248,0.15)]">
+                    <div className={`w-14 h-14 rounded-full bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400 font-bold text-xl ${isMinimal ? '' : 'shadow-[0_0_15px_rgba(56,189,248,0.15)]'}`}>
                       {currentTestimonial.name === 'N/A' ? 'NA' : currentTestimonial.name.substring(0, 2).toUpperCase()}
                     </div>
                     <div>
@@ -264,7 +297,7 @@ export function Testimonials() {
                   onClick={() => goToSlide(index)}
                   className={`h-2 rounded-full transition-all duration-300 ${
                     index === currentIndex
-                      ? 'w-8 bg-sky-400 shadow-[0_0_10px_rgba(56,189,248,0.5)]'
+                      ? `w-8 bg-sky-400 ${isMinimal ? '' : 'shadow-[0_0_10px_rgba(56,189,248,0.5)]'}`
                       : 'w-2 bg-slate-700 hover:bg-slate-500'
                   }`}
                   aria-label={`Go to testimonial ${index + 1}`}
