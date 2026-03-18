@@ -79,7 +79,7 @@ const getCurrentTime = () => new Date().toLocaleTimeString([], { hour: '2-digit'
 const INITIAL_MESSAGE = "Hello! I'm Karl. Thanks for visiting my portfolio. What would you like to know about my engineering background or projects?";
 const SUGGESTED_QUESTIONS = [
   "What makes your BMEE joint degree program unique?",
-  "What are your strongest technical skills?",
+  "What is the focus of your ongoing thesis research?",
   "Can I see your resume?"
 ];
 
