@@ -54,13 +54,16 @@ export function Footer() {
   // --- SMART VISIBILITY LOGIC ---
   useEffect(() => {
     const handleScroll = () => {
-      // Only show button after scrolling 400px
+      // Show button after scrolling 400px
       if (window.scrollY > 400) {
         setShowButton(true);
       } else {
         setShowButton(false);
       }
     };
+
+    // FIX: Check the scroll position immediately on mount in case the user reloads at the bottom
+    handleScroll();
 
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
