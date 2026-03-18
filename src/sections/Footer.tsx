@@ -1,5 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence, useMotionValue, useSpring, useAnimationFrame } from 'framer-motion';
+import { 
+  motion, 
+  AnimatePresence, 
+  useMotionValue, 
+  useSpring, 
+  useAnimationFrame,
+  useScroll,
+  useMotionValueEvent
+} from 'framer-motion';
 // 1. Connect to the global performance engine
 import { usePerformance } from '@/context/PerformanceContext'; 
 import { Linkedin, Github, Mail, ArrowUp, Sparkles } from 'lucide-react';
@@ -51,33 +59,14 @@ export function Footer() {
   });
   // --------------------------------------------------
 
-  // --- SMART VISIBILITY LOGIC (Mobile Optimized) ---
-  useEffect(() => {
-    const handleScroll = () => {
-      // Fallback included for broader mobile browser support
-      const currentScrollY = window.scrollY || document.documentElement.scrollTop;
-      
-      if (currentScrollY > 400) {
-        setShowButton(true);
-      } else {
-        setShowButton(false);
-      }
-    };
-
-    // FIX: Mobile browsers delay restoring scroll position until after React mounts.
-    // This 150ms timeout ensures we check AFTER the browser has jumped to the bottom.
-    const initialCheck = setTimeout(() => {
-      handleScroll();
-    }, 150); 
-
-    // Added { passive: true } for smoother scroll performance on mobile
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    
-    return () => {
-      clearTimeout(initialCheck);
-      window.removeEventListener('scroll', handleScroll);
-    };
-  }, []);
+  // --- SMART VISIBILITY LOGIC (MOBILE OPTIMIZED) ---
+  // This replaces the buggy window.addEventListener with Framer Motion's hardware-accelerated scroll tracker
+  const { scrollY } = useScroll();
+  
+  useMotionValueEvent(scrollY, "change", (latest) => {
+    // React will automatically ignore this if the value hasn't changed, preventing glitchy re-renders
+    setShowButton(latest > 400);
+  });
 
   return (
     <footer className="relative py-12 border-t border-slate-900 bg-slate-950 overflow-hidden text-slate-300">
