@@ -6,7 +6,7 @@ import { Zap, Sparkles, Leaf, Moon, Sun, Power } from 'lucide-react';
 import { usePerformance, AppMode } from '@/context/PerformanceContext'; 
 import { useTheme } from '@/hooks/useTheme'; 
 
-// --- THE BOOT LOGO (Scaled up PowerMark) ---
+// --- THE BOOT LOGO (Responsive scaling) ---
 function BootLogo() {
   const [isHovered, setIsHovered] = useState(false);
   const rotation = useMotionValue(0);
@@ -26,7 +26,7 @@ function BootLogo() {
 
   return (
     <div 
-      className="relative w-20 h-20 flex items-center justify-center cursor-pointer mb-8"
+      className="relative w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center cursor-pointer mb-6 sm:mb-8"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
@@ -35,20 +35,20 @@ function BootLogo() {
         animate={{ scale: isHovered ? 1.05 : 1 }}
         style={{ clipPath: nodePath, WebkitClipPath: nodePath, rotate: rotation }}
       >
-        {["top-1.5 left-1.5", "top-1.5 right-1.5", "bottom-1.5 left-1.5", "bottom-1.5 right-1.5"].map((pos, i) => (
-          <div key={i} className={`absolute w-1.5 h-1.5 rounded-full bg-foreground/30 border border-foreground/20 ${pos}`} />
+        {["top-1 sm:top-1.5 left-1 sm:left-1.5", "top-1 sm:top-1.5 right-1 sm:right-1.5", "bottom-1 sm:bottom-1.5 left-1 sm:left-1.5", "bottom-1 sm:bottom-1.5 right-1 sm:right-1.5"].map((pos, i) => (
+          <div key={i} className={`absolute w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-foreground/30 border border-foreground/20 ${pos}`} />
         ))}
       </motion.div>
 
       <motion.div 
-        className="absolute inset-2 bg-foreground flex items-center justify-center z-10 shadow-2xl"
-        animate={{ inset: isHovered ? "4px" : "10px" }}
+        className="absolute inset-1.5 sm:inset-2 bg-foreground flex items-center justify-center z-10 shadow-2xl"
+        animate={{ inset: isHovered ? "4px" : "8px" }}
         style={{ clipPath: nodePath, WebkitClipPath: nodePath }}
       >
         <div className="absolute inset-[1.5px] bg-background flex items-center justify-center" style={{ clipPath: nodePath, WebkitClipPath: nodePath }}>
           <motion.span 
-            className="relative z-10 text-foreground font-black tracking-tighter"
-            animate={{ scale: isHovered ? 1.3 : 1, fontSize: "16px" }}
+            className="relative z-10 text-foreground font-black tracking-tighter text-sm sm:text-base"
+            animate={{ scale: isHovered ? 1.3 : 1 }}
           >
             KP
           </motion.span>
@@ -86,6 +86,7 @@ export function BootSequence() {
     }
   }, []);
 
+  // Lock body scroll so the background site doesn't move while the modal scrolls
   useEffect(() => {
     if (isVisible) {
       document.body.style.overflow = 'hidden';
@@ -104,13 +105,12 @@ export function BootSequence() {
     } catch (error) {
       console.warn("Context fallback activated.");
     } finally {
-      // This will ALWAYS run, guaranteeing the modal closes
       localStorage.setItem('espino_system_booted', 'true'); 
       setIsVisible(false); 
     }
   };
 
-  // Dynamic Button Styling (Less steep purple, softer glow)
+  // Dynamic Button Styling
   const getButtonColor = () => {
     switch(stagedMode) {
       case 'visual': return 'bg-purple-700 shadow-[0_0_20px_rgba(109,40,217,0.3)] hover:shadow-[0_0_30px_rgba(109,40,217,0.5)] hover:bg-purple-600';
@@ -124,7 +124,7 @@ export function BootSequence() {
 
   const containerVariants = {
     hidden: { opacity: 0 },
-    visible: { opacity: 1, transition: { staggerChildren: 0.15, delayChildren: 0.2 } },
+    visible: { opacity: 1, transition: { staggerChildren: 0.1, delayChildren: 0.2 } },
     exit: { opacity: 0, scale: 0.95, filter: "blur(10px)", transition: { duration: 0.4, ease: "easeInOut" } }
   };
 
@@ -137,116 +137,121 @@ export function BootSequence() {
     <AnimatePresence>
       {isVisible && (
         <motion.div 
-          className="fixed inset-0 z-[500] flex items-center justify-center bg-background/80 backdrop-blur-2xl p-4"
+          // FIX: Changed from `flex items-center` to `overflow-y-auto`
+          className="fixed inset-0 z-[500] bg-background/80 backdrop-blur-2xl overflow-y-auto"
           variants={containerVariants}
           initial="hidden"
           animate="visible"
           exit="exit"
         >
-          <div className="absolute inset-0 z-0 opacity-[0.03] bg-[radial-gradient(#000_1px,transparent_1px)] [background-size:16px_16px] dark:bg-[radial-gradient(#fff_1px,transparent_1px)]" />
+          {/* Animated background grid stays fixed to the viewport */}
+          <div className="fixed inset-0 z-0 opacity-[0.03] bg-[radial-gradient(#000_1px,transparent_1px)] [background-size:16px_16px] dark:bg-[radial-gradient(#fff_1px,transparent_1px)] pointer-events-none" />
           
-          <div className="relative z-10 max-w-4xl w-full flex flex-col items-center">
+          {/* FIX: Inner wrapper uses min-h-[100dvh] to center if tall enough, or allows natural scroll if too short */}
+          <div className="min-h-[100dvh] w-full flex flex-col items-center justify-center p-4 py-12 relative z-10">
             
-            <motion.div variants={itemVariants} className="flex flex-col items-center mb-10 text-center">
-              <BootLogo />
-              <h1 className="text-3xl md:text-4xl font-black tracking-tighter text-foreground uppercase mb-3">
-                System Initialization
-              </h1>
-              <p className="text-muted-foreground max-w-md text-sm md:text-base">
-                Welcome to the Espino Engine. Configure your system resources and interface theme to proceed.
-              </p>
-            </motion.div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full max-w-3xl mb-10">
+            <div className="relative z-10 max-w-4xl w-full flex flex-col items-center">
               
-              {/* TURBO MODE - Restored Transparent Background */}
-              <motion.button
-                variants={itemVariants}
-                onClick={() => setStagedMode('visual')}
-                className={`group relative flex flex-col items-start p-6 rounded-2xl border transition-all text-left overflow-hidden ${
-                  stagedMode === 'visual' 
-                    ? 'border-purple-500 bg-purple-500/10 shadow-[0_0_20px_rgba(168,85,247,0.15)]' 
-                    : 'border-border bg-card/50 hover:bg-card hover:border-purple-500/50'
-                }`}
-              >
-                <div className="p-2.5 rounded-full bg-purple-500/10 text-purple-500 mb-4 transition-transform group-hover:scale-110">
-                  <Sparkles className="w-4 h-4" />
-                </div>
-                <h3 className="text-lg font-bold mb-2 text-foreground">Turbo</h3>
-                <p className="text-xs text-muted-foreground leading-relaxed">Maximum visual fidelity. High-frequency animations, glows, and particle effects.</p>
-              </motion.button>
+              <motion.div variants={itemVariants} className="flex flex-col items-center mb-8 sm:mb-10 text-center">
+                <BootLogo />
+                <h1 className="text-2xl sm:text-3xl md:text-4xl font-black tracking-tighter text-foreground uppercase mb-2 sm:mb-3">
+                  System Initialization
+                </h1>
+                <p className="text-muted-foreground max-w-md text-xs sm:text-sm md:text-base px-4">
+                  Welcome to the Espino Engine. Configure your system resources and interface theme to proceed.
+                </p>
+              </motion.div>
 
-              {/* PERFORMANCE MODE - Restored Transparent Background */}
-              <motion.button
-                variants={itemVariants}
-                onClick={() => setStagedMode('performance')}
-                className={`group relative flex flex-col items-start p-6 rounded-2xl border transition-all text-left overflow-hidden ${
-                  stagedMode === 'performance' 
-                    ? 'border-sky-500 bg-sky-500/10 shadow-[0_0_20px_rgba(56,189,248,0.15)]' 
-                    : 'border-border bg-card/50 hover:bg-card hover:border-sky-500/50'
-                }`}
-              >
-                <div className="absolute top-4 right-4 text-[9px] font-bold tracking-widest uppercase text-sky-500 bg-sky-500/10 px-2.5 py-1 rounded-full">Default</div>
-                <div className="p-2.5 rounded-full bg-sky-500/20 text-sky-500 mb-4 transition-transform group-hover:scale-110">
-                  <Zap className="w-4 h-4 fill-current" />
-                </div>
-                <h3 className="text-lg font-bold mb-2 text-foreground">Performance</h3>
-                <p className="text-xs text-muted-foreground leading-relaxed">Balanced system load. Essential physics and smooth transitions without GPU strain.</p>
-              </motion.button>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4 w-full max-w-3xl mb-8 sm:mb-10">
+                
+                {/* TURBO MODE */}
+                <motion.button
+                  variants={itemVariants}
+                  onClick={() => setStagedMode('visual')}
+                  className={`group relative flex flex-col items-start p-5 sm:p-6 rounded-2xl border transition-all text-left overflow-hidden ${
+                    stagedMode === 'visual' 
+                      ? 'border-purple-500 bg-purple-500/10 shadow-[0_0_20px_rgba(168,85,247,0.15)]' 
+                      : 'border-border bg-card/50 hover:bg-card hover:border-purple-500/50'
+                  }`}
+                >
+                  <div className="p-2 sm:p-2.5 rounded-full bg-purple-500/10 text-purple-500 mb-3 sm:mb-4 transition-transform group-hover:scale-110">
+                    <Sparkles className="w-4 h-4" />
+                  </div>
+                  <h3 className="text-base sm:text-lg font-bold mb-1 sm:mb-2 text-foreground">Turbo</h3>
+                  <p className="text-[11px] sm:text-xs text-muted-foreground leading-relaxed">Maximum visual fidelity. High-frequency animations, glows, and particle effects.</p>
+                </motion.button>
 
-              {/* ECO MODE - Restored Transparent Background */}
-              <motion.button
-                variants={itemVariants}
-                onClick={() => setStagedMode('eco')}
-                className={`group relative flex flex-col items-start p-6 rounded-2xl border transition-all text-left overflow-hidden ${
-                  stagedMode === 'eco' 
-                    ? 'border-emerald-500 bg-emerald-500/10 shadow-[0_0_20px_rgba(16,185,129,0.15)]' 
-                    : 'border-border bg-card/50 hover:bg-card hover:border-emerald-500/50'
-                }`}
-              >
-                <div className="p-2.5 rounded-full bg-emerald-500/10 text-emerald-500 mb-4 transition-transform group-hover:scale-110">
-                  <Leaf className="w-4 h-4" />
-                </div>
-                <h3 className="text-lg font-bold mb-2 text-foreground">Eco</h3>
-                <p className="text-xs text-muted-foreground leading-relaxed">Maximum efficiency. Static layouts, disabled physics loops, and minimal rendering.</p>
-              </motion.button>
-            </div>
+                {/* PERFORMANCE MODE */}
+                <motion.button
+                  variants={itemVariants}
+                  onClick={() => setStagedMode('performance')}
+                  className={`group relative flex flex-col items-start p-5 sm:p-6 rounded-2xl border transition-all text-left overflow-hidden ${
+                    stagedMode === 'performance' 
+                      ? 'border-sky-500 bg-sky-500/10 shadow-[0_0_20px_rgba(56,189,248,0.15)]' 
+                      : 'border-border bg-card/50 hover:bg-card hover:border-sky-500/50'
+                  }`}
+                >
+                  <div className="absolute top-3 right-3 sm:top-4 sm:right-4 text-[8px] sm:text-[9px] font-bold tracking-widest uppercase text-sky-500 bg-sky-500/10 px-2 py-1 rounded-full">Default</div>
+                  <div className="p-2 sm:p-2.5 rounded-full bg-sky-500/20 text-sky-500 mb-3 sm:mb-4 transition-transform group-hover:scale-110">
+                    <Zap className="w-4 h-4 fill-current" />
+                  </div>
+                  <h3 className="text-base sm:text-lg font-bold mb-1 sm:mb-2 text-foreground">Performance</h3>
+                  <p className="text-[11px] sm:text-xs text-muted-foreground leading-relaxed">Balanced system load. Essential physics and smooth transitions without GPU strain.</p>
+                </motion.button>
 
-            {/* CONTROL ROW: Theme Toggle + Boot Button */}
-            <motion.div variants={itemVariants} className="flex flex-col sm:flex-row items-center gap-6 w-full max-w-3xl justify-between px-2">
-              
-              {/* THEME TOGGLE */}
-              <div className="flex flex-col gap-2 items-center sm:items-start">
-                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest pl-2">Interface Theme</span>
-                <div className="flex bg-foreground/5 rounded-full p-1 border border-border">
-                  <button 
-                    onClick={() => setTheme('dark')} 
-                    className={`px-5 py-2 rounded-full flex items-center gap-2 text-xs font-bold transition-all ${resolvedTheme === 'dark' ? 'bg-background text-foreground shadow-sm border border-border/50' : 'text-muted-foreground hover:text-foreground'}`}
-                  >
-                    <Moon className="w-3.5 h-3.5" /> Dark
-                  </button>
-                  <button 
-                    onClick={() => setTheme('light')} 
-                    className={`px-5 py-2 rounded-full flex items-center gap-2 text-xs font-bold transition-all ${resolvedTheme === 'light' ? 'bg-background text-foreground shadow-sm border border-border/50' : 'text-muted-foreground hover:text-foreground'}`}
-                  >
-                    <Sun className="w-3.5 h-3.5" /> Light
-                  </button>
-                </div>
+                {/* ECO MODE */}
+                <motion.button
+                  variants={itemVariants}
+                  onClick={() => setStagedMode('eco')}
+                  className={`group relative flex flex-col items-start p-5 sm:p-6 rounded-2xl border transition-all text-left overflow-hidden ${
+                    stagedMode === 'eco' 
+                      ? 'border-emerald-500 bg-emerald-500/10 shadow-[0_0_20px_rgba(16,185,129,0.15)]' 
+                      : 'border-border bg-card/50 hover:bg-card hover:border-emerald-500/50'
+                  }`}
+                >
+                  <div className="p-2 sm:p-2.5 rounded-full bg-emerald-500/10 text-emerald-500 mb-3 sm:mb-4 transition-transform group-hover:scale-110">
+                    <Leaf className="w-4 h-4" />
+                  </div>
+                  <h3 className="text-base sm:text-lg font-bold mb-1 sm:mb-2 text-foreground">Eco</h3>
+                  <p className="text-[11px] sm:text-xs text-muted-foreground leading-relaxed">Maximum efficiency. Static layouts, disabled physics loops, and minimal rendering.</p>
+                </motion.button>
               </div>
 
-              {/* DYNAMIC PROCEED BUTTON */}
-              <button
-                onClick={handleProceed}
-                className={`group relative px-8 py-3.5 text-white font-black text-sm uppercase tracking-widest rounded-full transition-all duration-300 active:scale-95 flex items-center gap-3 overflow-hidden mt-4 sm:mt-0 ${getButtonColor()}`}
-              >
-                {/* Hardware Pulse Ring */}
-                <div className="absolute inset-0 rounded-full border border-white/10 animate-[pulse_2s_ease-in-out_infinite]" />
-                <Power className="w-4 h-4 relative z-10 transition-transform group-hover:rotate-180 duration-500" />
-                <span className="relative z-10">Initialize Engine</span>
-              </button>
+              {/* CONTROL ROW: Theme Toggle + Boot Button */}
+              <motion.div variants={itemVariants} className="flex flex-col sm:flex-row items-center gap-6 sm:gap-6 w-full max-w-3xl justify-between px-2">
+                
+                {/* THEME TOGGLE */}
+                <div className="flex flex-col gap-2 items-center sm:items-start w-full sm:w-auto">
+                  <span className="text-[9px] sm:text-[10px] font-bold text-muted-foreground uppercase tracking-widest sm:pl-2">Interface Theme</span>
+                  <div className="flex bg-foreground/5 rounded-full p-1 border border-border w-full sm:w-auto justify-center">
+                    <button 
+                      onClick={() => setTheme('dark')} 
+                      className={`px-6 sm:px-5 py-2.5 sm:py-2 rounded-full flex items-center justify-center gap-2 text-xs font-bold transition-all w-1/2 sm:w-auto ${resolvedTheme === 'dark' ? 'bg-background text-foreground shadow-sm border border-border/50' : 'text-muted-foreground hover:text-foreground'}`}
+                    >
+                      <Moon className="w-3.5 h-3.5" /> Dark
+                    </button>
+                    <button 
+                      onClick={() => setTheme('light')} 
+                      className={`px-6 sm:px-5 py-2.5 sm:py-2 rounded-full flex items-center justify-center gap-2 text-xs font-bold transition-all w-1/2 sm:w-auto ${resolvedTheme === 'light' ? 'bg-background text-foreground shadow-sm border border-border/50' : 'text-muted-foreground hover:text-foreground'}`}
+                    >
+                      <Sun className="w-3.5 h-3.5" /> Light
+                    </button>
+                  </div>
+                </div>
 
-            </motion.div>
+                {/* DYNAMIC PROCEED BUTTON */}
+                <button
+                  onClick={handleProceed}
+                  className={`group relative px-8 py-4 sm:py-3.5 text-white font-black text-sm uppercase tracking-widest rounded-full transition-all duration-300 active:scale-95 flex items-center justify-center gap-3 overflow-hidden w-full sm:w-auto mt-2 sm:mt-0 ${getButtonColor()}`}
+                >
+                  <div className="absolute inset-0 rounded-full border border-white/10 animate-[pulse_2s_ease-in-out_infinite]" />
+                  <Power className="w-4 h-4 relative z-10 transition-transform group-hover:rotate-180 duration-500" />
+                  <span className="relative z-10">Initialize Engine</span>
+                </button>
 
+              </motion.div>
+
+            </div>
           </div>
         </motion.div>
       )}
