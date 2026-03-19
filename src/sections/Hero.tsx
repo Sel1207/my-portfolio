@@ -19,8 +19,8 @@ import {
   X 
 } from 'lucide-react';
 
-// --- CUSTOM TYPEWRITER (Untouched, runs smoothly in all modes) ---
-function TypewriterEffect() {
+// --- CUSTOM TYPEWRITER (Added Ignition Lock) ---
+function TypewriterEffect({ isBooted = true }: { isBooted?: boolean }) {
   const strings = [
     'BS/MS Electrical Engineering Student',
     'Power System Protection Specialist',
@@ -31,6 +31,8 @@ function TypewriterEffect() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
+    if (!isBooted) return; // HALT animation until system is initialized
+
     const i = loopNum % strings.length;
     const fullText = strings[i];
     const typingSpeed = 50;
@@ -57,19 +59,22 @@ function TypewriterEffect() {
     }
 
     return () => clearTimeout(timer);
-  }, [text, isDeleting, loopNum]);
+  }, [text, isDeleting, loopNum, isBooted]);
 
   return <span>{text}<span className="animate-pulse ml-1 text-slate-400">|</span></span>;
 }
 
-// --- CUSTOM COUNTER ---
-function Counter({ end, duration = 2 }: { end: number; duration?: number }) {
+// --- CUSTOM COUNTER (Added Ignition Lock) ---
+function Counter({ end, duration = 2, isBooted = true }: { end: number; duration?: number; isBooted?: boolean }) {
   const [count, setCount] = useState(0);
   const ref = useRef<HTMLSpanElement>(null);
   const isInView = useInView(ref, { once: true });
+  const [hasRun, setHasRun] = useState(false);
 
   useEffect(() => {
-    if (isInView) {
+    // Only run if it's in view AND the boot sequence is finished
+    if (isInView && isBooted && !hasRun) {
+      setHasRun(true);
       let start = 0;
       const increment = end / (duration * 60);
       const timer = setInterval(() => {
@@ -83,19 +88,22 @@ function Counter({ end, duration = 2 }: { end: number; duration?: number }) {
       }, 1000 / 60);
       return () => clearInterval(timer);
     }
-  }, [isInView, end, duration]);
+  }, [isInView, isBooted, end, duration, hasRun]);
 
   return <span ref={ref}>{count}</span>;
 }
 
-// --- ORDINAL SEQUENCE ANIMATION ---
-function OrdinalSequence({ sequence, duration = 1.5 }: { sequence: string[]; duration?: number }) {
+// --- ORDINAL SEQUENCE ANIMATION (Added Ignition Lock) ---
+function OrdinalSequence({ sequence, duration = 1.5, isBooted = true }: { sequence: string[]; duration?: number; isBooted?: boolean }) {
   const [index, setIndex] = useState(0);
   const ref = useRef<HTMLSpanElement>(null);
   const isInView = useInView(ref, { once: true });
+  const [hasRun, setHasRun] = useState(false);
 
   useEffect(() => {
-    if (isInView) {
+    // Only run if it's in view AND the boot sequence is finished
+    if (isInView && isBooted && !hasRun) {
+      setHasRun(true);
       const stepTime = (duration * 1000) / sequence.length;
       const timer = setInterval(() => {
         setIndex((prev) => {
@@ -108,7 +116,7 @@ function OrdinalSequence({ sequence, duration = 1.5 }: { sequence: string[]; dur
       }, stepTime);
       return () => clearInterval(timer);
     }
-  }, [isInView, sequence, duration]);
+  }, [isInView, isBooted, sequence, duration, hasRun]);
 
   return <span ref={ref}>{sequence[index]}</span>;
 }
@@ -160,19 +168,17 @@ const staggerContainer = {
 };
 
 interface StatItemProps {
-  value: number | string | ReactNode;
+  value: ReactNode; // Simplified to directly accept the animated components
   label: string;
   suffix?: string;
   tooltip?: string;
-  isCounter?: boolean;
 }
 
-// 1. STAT TEXT SIZE INCREASED FOR MOBILE (text-3xl)
-function StatItem({ value, label, suffix = '', tooltip, isCounter = false }: StatItemProps) {
+function StatItem({ value, label, suffix = '', tooltip }: StatItemProps) {
   return (
     <motion.div variants={fadeInUp} className="text-center relative group cursor-help px-1">
       <div className="text-3xl md:text-4xl font-bold text-accent-blue transition-colors group-hover:text-blue-400 leading-tight truncate">
-        {isCounter && typeof value === 'number' ? <Counter end={value} /> : value}{suffix}
+        {value}{suffix}
       </div>
       <div className="text-[11px] sm:text-xs md:text-sm text-muted-foreground mt-1 transition-colors group-hover:text-foreground leading-tight">
         {label}
@@ -194,6 +200,25 @@ function StatItem({ value, label, suffix = '', tooltip, isCounter = false }: Sta
 export function Hero() {
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const { isLowPower, isMinimal } = usePerformance();
+  
+  // NEW: IGNITION TRACKER
+  const [isBooted, setIsBooted] = useState(false);
+
+  // Polls memory to detect when the boot sequence is officially complete
+  useEffect(() => {
+    const checkBootStatus = () => {
+      if (localStorage.getItem('espino_system_booted') === 'true') {
+        setIsBooted(true);
+      }
+    };
+    
+    // Check instantly on mount
+    checkBootStatus();
+    
+    // If not booted yet, check rapidly until the button is clicked
+    const interval = setInterval(checkBootStatus, 200);
+    return () => clearInterval(interval);
+  }, []);
 
   // --- SEAMLESS PHYSICS ENGINE ---
   const timeRef = useRef(0);
@@ -275,10 +300,7 @@ export function Hero() {
         className={`absolute top-1/4 right-0 w-96 h-96 bg-accent-blue/10 rounded-full transition-[filter] duration-1000 ${
           isLowPower ? 'blur-2xl' : 'blur-3xl'
         }`}
-        style={{ 
-          scale: blobScale, 
-          opacity: blobOpacity 
-        }}
+        style={{ scale: blobScale, opacity: blobOpacity }}
       />
       
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full flex-grow flex items-center z-10">
@@ -306,7 +328,6 @@ export function Hero() {
 
             <motion.div variants={fadeInUp}>
               <p className="text-lg text-muted-foreground mb-2">Hello, I'm</p>
-              {/* 2. ONE LINER NAME FIX FOR MOBILE */}
               <h1 className="text-4xl min-[400px]:text-[2.6rem] sm:text-5xl lg:text-7xl font-bold mb-4 flex flex-wrap items-center gap-x-2 sm:gap-x-3">
                 <span className="text-foreground">Karl Philip</span>
                 <motion.span 
@@ -327,7 +348,7 @@ export function Hero() {
               </h1>
               
               <div className="text-xl font-medium text-blue-400 h-8 mb-6">
-                <TypewriterEffect />
+                <TypewriterEffect isBooted={isBooted} />
               </div>
             </motion.div>
 
@@ -359,18 +380,16 @@ export function Hero() {
               </Magnetic>
             </motion.div>
 
-            {/* 3. 2x2 GRID FOR MOBILE (grid-cols-2) */}
             <motion.div variants={staggerContainer} className="grid grid-cols-2 sm:grid-cols-4 gap-y-8 gap-x-4 sm:gap-6 w-full mb-8 sm:mb-0">
               <StatItem 
-                value={<OrdinalSequence sequence={['1st', '2nd', '3rd']} />} 
+                value={<OrdinalSequence sequence={['1st', '2nd', '3rd']} isBooted={isBooted} />} 
                 label="Year Standing" 
                 tooltip="Calculated based on successfully completed academic units."
               />
               <StatItem 
-                value={6} 
+                value={<Counter end={6} isBooted={isBooted} />} 
                 label="President's Lister" 
                 suffix="x" 
-                isCounter={true}
                 tooltip="An elite quarterly award granted exclusively to top-ranking Dean's Listers."
               />
               <StatItem 
