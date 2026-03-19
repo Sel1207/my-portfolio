@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, useMotionValue, useSpring, useTransform, useAnimationFrame } from 'framer-motion';
 import { useScrollReveal } from '@/hooks/useScrollReveal';
-// 1. Connect to the global Tri-Mode performance engine
+// Connect to the global Tri-Mode performance engine
 import { usePerformance } from '@/context/PerformanceContext'; 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -54,7 +54,7 @@ const contactInfo: ContactInfo[] = [
 export function Contact() {
   const { ref: sectionRef, isRevealed } = useScrollReveal<HTMLElement>();
   
-  // 2. Destructure global Tri-Mode state
+  // Destructure global Tri-Mode state
   const { isLowPower, isMinimal } = usePerformance();
 
   const [formState, setFormState] = useState({
@@ -66,44 +66,6 @@ export function Contact() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-
-  // --- SEAMLESS PHYSICS ENGINE FOR ALL GRADIENTS ---
-  const gradientPos = useMotionValue(0);
-  const gradientDirection = useRef(1);
-
-  // TRI-MODE THROTTLE: Minimal = 0 (Stop), Performance = 0.2 (Slow), Visual = 1 (Fast)
-  const speedMultiplier = useSpring(isMinimal ? 0 : isLowPower ? 0.2 : 1, { stiffness: 40, damping: 20 });
-
-  useEffect(() => {
-    speedMultiplier.set(isMinimal ? 0 : isLowPower ? 0.2 : 1);
-  }, [isMinimal, isLowPower, speedMultiplier]);
-
-  useAnimationFrame((time, delta) => {
-    if (delta > 100) delta = 16; // Safety catch for browser tab switching
-    const dSec = delta / 1000;
-    const m = speedMultiplier.get();
-
-    if (isMinimal) {
-      // SETTLE AT BLUE: Smoothly glide the gradient back to 0% without teleporting
-      const currentGPos = gradientPos.get();
-      gradientPos.set(currentGPos + (0 - currentGPos) * 0.1); // Smooth decay factor
-      gradientDirection.current = 1; // Reset direction for when it turns back on
-    } else {
-      // Ping-Pong Gradient Math (0% -> 100% -> 0%)
-      let gP = gradientPos.get() + (40 * m * dSec * gradientDirection.current);
-      if (gP >= 100) {
-        gP = 100 - (gP - 100);
-        gradientDirection.current = -1;
-      } else if (gP <= 0) {
-        gP = Math.abs(gP);
-        gradientDirection.current = 1;
-      }
-      gradientPos.set(gP);
-    }
-  });
-
-  const bgPosString = useTransform(gradientPos, v => `${v}% 50%`);
-  // --------------------------------------------------
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormState((prev) => ({
@@ -188,29 +150,49 @@ export function Contact() {
                 <span className={`w-2 h-2 rounded-full bg-sky-500 relative z-10 ${isMinimal || isLowPower ? '' : 'animate-pulse'}`} />
                 <span className="text-sky-600 dark:text-sky-400 text-xs font-bold uppercase tracking-widest relative z-10">Get In Touch</span>
                 
-                {/* FAST SHINE: 0.8s duration, cleanly removed in Performance & Minimal Mode */}
-                {!isLowPower && !isMinimal && (
-                  <motion.div 
-                    className="absolute top-0 bottom-0 w-[150%] bg-gradient-to-r from-transparent via-sky-300/40 dark:via-white/20 to-transparent -skew-x-12 z-0"
-                    animate={{ left: ['-100%', '200%'] }}
-                    transition={{ duration: 0.8, repeat: Infinity, repeatDelay: 3.5, ease: "easeInOut" }}
-                  />
-                )}
+                {/* FAST SHINE: Smooth fade out in Eco instead of teleporting */}
+                <motion.div 
+                  className="absolute top-0 bottom-0 w-[150%] bg-gradient-to-r from-transparent via-sky-300/40 dark:via-white/20 to-transparent -skew-x-12 z-0"
+                  animate={{ 
+                    left: ['-100%', '200%'],
+                    opacity: isLowPower || isMinimal ? 0 : 1
+                  }}
+                  transition={{ 
+                    left: { duration: 0.8, repeat: Infinity, repeatDelay: 3.5, ease: "easeInOut" },
+                    opacity: { duration: 0.5, ease: "easeInOut" } 
+                  }}
+                />
               </div>
             </motion.div>
 
+            {/* BUTTER-SMOOTH NATIVE GRADIENT ANIMATION */}
             <h2 className="text-4xl md:text-5xl font-bold mb-4 text-foreground tracking-tight">
               Let's{' '}
               <motion.span 
                 className="inline-block"
+                animate={{
+                  backgroundImage: isMinimal 
+                    ? "linear-gradient(135deg, rgb(14, 165, 233), rgb(14, 165, 233), rgb(14, 165, 233), rgb(14, 165, 233))"
+                    : "linear-gradient(135deg, rgb(14, 165, 233), rgb(59, 130, 246), rgb(139, 92, 246), rgb(14, 165, 233))",
+                  backgroundPosition: isMinimal ? "0% 50%" : ["0% 50%", "100% 50%", "0% 50%"],
+                }}
+                transition={{
+                  backgroundPosition: {
+                    duration: isMinimal ? 1 : (isLowPower ? 15 : 8),
+                    ease: isMinimal ? "easeOut" : "linear",
+                    repeat: isMinimal ? 0 : Infinity,
+                  },
+                  backgroundImage: {
+                    duration: 1,
+                    ease: "easeInOut"
+                  }
+                }}
                 style={{
-                  backgroundImage: "linear-gradient(135deg, rgb(14, 165, 233), rgb(59, 130, 246), rgb(139, 92, 246), rgb(14, 165, 233))",
                   backgroundSize: "300% 300%",
                   WebkitBackgroundClip: "text",
                   WebkitTextFillColor: "transparent",
                   backgroundClip: "text",
                   color: "transparent",
-                  backgroundPosition: bgPosString // Settles to 0% smoothly on Minimal Mode
                 }}
               >
                 Connect
@@ -240,7 +222,7 @@ export function Contact() {
                   className="flex items-start gap-5 group"
                   style={{ transitionDelay: `${300 + index * 100}ms` }}
                 >
-                  <div className={`w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center flex-shrink-0 border border-border transition-all duration-300 ${isMinimal ? '' : 'group-hover:bg-sky-500/10 group-hover:border-sky-500/30'}`}>
+                  <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center flex-shrink-0 border border-border transition-all duration-300 group-hover:bg-sky-500/10 group-hover:border-sky-500/30">
                     <item.icon className="h-5 w-5 text-sky-600 dark:text-sky-400" />
                   </div>
                   <div>
@@ -258,7 +240,7 @@ export function Contact() {
                           </span>
                         ))}
                         {item.href.startsWith('http') && (
-                          <ExternalLink className={`h-4 w-4 transition-all ${isMinimal ? '' : 'opacity-50 group-hover/link:opacity-100 group-hover/link:translate-x-0.5 group-hover/link:-translate-y-0.5'}`} />
+                          <ExternalLink className="h-4 w-4 transition-all opacity-50 group-hover/link:opacity-100 group-hover/link:translate-x-0.5 group-hover/link:-translate-y-0.5" />
                         )}
                       </a>
                     ) : (
@@ -283,7 +265,7 @@ export function Contact() {
                   href="https://www.linkedin.com/in/karl-philip-espino-388894346/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className={`w-12 h-12 rounded-xl bg-card border border-border flex items-center justify-center text-muted-foreground transition-all duration-300 shadow-sm ${isMinimal ? '' : 'hover:bg-sky-500/10 hover:border-sky-500/40 hover:text-sky-600 dark:hover:text-sky-400'} ${isLowPower || isMinimal ? '' : 'hover:-translate-y-1'}`}
+                  className={`w-12 h-12 rounded-xl bg-card border border-border flex items-center justify-center text-muted-foreground transition-all duration-300 shadow-sm hover:bg-sky-500/10 hover:border-sky-500/40 hover:text-sky-600 dark:hover:text-sky-400 ${isLowPower || isMinimal ? '' : 'hover:-translate-y-1'}`}
                 >
                   <Linkedin className="h-5 w-5" />
                 </a>
@@ -291,13 +273,13 @@ export function Contact() {
                   href="https://github.com/Sel1207"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className={`w-12 h-12 rounded-xl bg-card border border-border flex items-center justify-center text-muted-foreground transition-all duration-300 shadow-sm ${isMinimal ? '' : 'hover:bg-sky-500/10 hover:border-sky-500/40 hover:text-sky-600 dark:hover:text-sky-400'} ${isLowPower || isMinimal ? '' : 'hover:-translate-y-1'}`}
+                  className={`w-12 h-12 rounded-xl bg-card border border-border flex items-center justify-center text-muted-foreground transition-all duration-300 shadow-sm hover:bg-sky-500/10 hover:border-sky-500/40 hover:text-sky-600 dark:hover:text-sky-400 ${isLowPower || isMinimal ? '' : 'hover:-translate-y-1'}`}
                 >
                   <Github className="h-5 w-5" />
                 </a>
                 <a
                   href="mailto:kpcespino@mymail.mapua.edu.ph"
-                  className={`w-12 h-12 rounded-xl bg-card border border-border flex items-center justify-center text-muted-foreground transition-all duration-300 shadow-sm ${isMinimal ? '' : 'hover:bg-sky-500/10 hover:border-sky-500/40 hover:text-sky-600 dark:hover:text-sky-400'} ${isLowPower || isMinimal ? '' : 'hover:-translate-y-1'}`}
+                  className={`w-12 h-12 rounded-xl bg-card border border-border flex items-center justify-center text-muted-foreground transition-all duration-300 shadow-sm hover:bg-sky-500/10 hover:border-sky-500/40 hover:text-sky-600 dark:hover:text-sky-400 ${isLowPower || isMinimal ? '' : 'hover:-translate-y-1'}`}
                 >
                   <Mail className="h-5 w-5" />
                 </a>
@@ -313,7 +295,6 @@ export function Contact() {
             style={{ transitionDelay: '300ms' }}
           >
             <div className="bg-card/50 backdrop-blur-sm rounded-3xl p-6 lg:p-8 border border-border/50 shadow-lg relative overflow-hidden group">
-              {/* Form Hover Glow - Disabled in Performance & Minimal Mode to save GPU repaints */}
               <div className={`absolute inset-0 bg-gradient-to-br from-sky-500/5 to-transparent opacity-0 transition-opacity duration-500 pointer-events-none ${isLowPower || isMinimal ? 'hidden' : 'group-hover:opacity-100'}`} />
               
               <h3 className="text-2xl font-bold mb-6 text-foreground relative z-10">Send a Message</h3>
@@ -393,7 +374,6 @@ export function Contact() {
                     />
                   </div>
 
-                  {/* Error Message Display */}
                   {errorMessage && (
                     <p className="text-red-500 text-sm font-medium bg-red-500/10 p-3 rounded-lg border border-red-500/20">{errorMessage}</p>
                   )}
@@ -401,7 +381,7 @@ export function Contact() {
                   <Button
                     type="submit"
                     disabled={isSubmitting}
-                    className={`w-full bg-sky-500 text-white font-bold tracking-wide rounded-xl py-6 mt-4 transition-all duration-300 hover:bg-sky-600 disabled:opacity-70 disabled:cursor-not-allowed group/btn ${isMinimal ? '' : 'hover:shadow-[0_0_20px_rgba(56,189,248,0.4)]'}`}
+                    className="w-full bg-sky-500 text-white font-bold tracking-wide rounded-xl py-6 mt-4 transition-all duration-300 hover:bg-sky-600 disabled:opacity-70 disabled:cursor-not-allowed group/btn hover:shadow-[0_0_20px_rgba(56,189,248,0.4)]"
                   >
                     {isSubmitting ? (
                       <>
@@ -411,8 +391,7 @@ export function Contact() {
                     ) : (
                       <>
                         Send Message
-                        {/* PERFORMANCE MODE: Disable hover translate on send icon */}
-                        <Send className={`ml-2 h-5 w-5 transition-transform ${isLowPower || isMinimal ? '' : 'group-hover/btn:translate-x-1 group-hover/btn:-translate-y-1'}`} />
+                        <Send className="ml-2 h-5 w-5 transition-transform group-hover/btn:translate-x-1 group-hover/btn:-translate-y-1" />
                       </>
                     )}
                   </Button>

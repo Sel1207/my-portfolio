@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { ThemeProvider } from '@/hooks/useTheme';
+import { PerformanceProvider } from '@/context/PerformanceContext'; // MAKE SURE THIS IS IMPORTED
 import { Navigation } from '@/sections/Navigation';
 import { Hero } from '@/sections/Hero';
 import { About } from '@/sections/About';
@@ -11,8 +12,8 @@ import { Testimonials } from '@/sections/Testimonials';
 import { Contact } from '@/sections/Contact';
 import { Footer } from '@/sections/Footer';
 import { ScrollProgress } from '@/components/ScrollProgress';
-// 1. Added your ChatWidget import here
 import { ChatWidget } from '@/components/ChatWidget'; 
+import { BootSequence } from '@/components/BootSequence'; // NEW COMPONENT
 import './App.css';
 
 // This is a "Wrapper" component. It makes things fade and slide up.
@@ -32,27 +33,33 @@ const Reveal = ({ children }: { children: React.ReactNode }) => {
 function App() {
   return (
     <ThemeProvider defaultTheme="dark">
-      <div className="min-h-screen bg-background text-foreground">
-        <ScrollProgress />
-        <Navigation />
-        <main>
-          {/* Hero usually looks better without a scroll-reveal since it's the first thing you see */}
-          <Hero /> 
+      <PerformanceProvider>
+        <div className="min-h-screen bg-background text-foreground">
+          
+          {/* THE SYSTEM INITIALIZATION INTERCEPTOR */}
+          <BootSequence />
 
-          <Reveal><About /></Reveal>
-          <Reveal><Projects /></Reveal>
-          <Reveal><Skills /></Reveal>
-          <Reveal><Organizations /></Reveal>
-          <Reveal><Certifications /></Reveal>
-          <Reveal><Testimonials /></Reveal>
-          <Reveal><Contact /></Reveal>
-        </main>
-        <Footer />
-        
-        {/* 2. Added the floating ChatWidget here */}
-        <ChatWidget />
-        
-      </div>
+          <ScrollProgress />
+          <Navigation />
+          <main>
+            {/* Hero usually looks better without a scroll-reveal since it's the first thing you see */}
+            <Hero /> 
+
+            <Reveal><About /></Reveal>
+            <Reveal><Projects /></Reveal>
+            <Reveal><Skills /></Reveal>
+            <Reveal><Organizations /></Reveal>
+            <Reveal><Certifications /></Reveal>
+            <Reveal><Testimonials /></Reveal>
+            <Reveal><Contact /></Reveal>
+          </main>
+          <Footer />
+          
+          {/* Floating ChatWidget */}
+          <ChatWidget />
+          
+        </div>
+      </PerformanceProvider>
     </ThemeProvider>
   );
 }

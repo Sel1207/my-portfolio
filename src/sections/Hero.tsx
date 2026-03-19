@@ -167,13 +167,14 @@ interface StatItemProps {
   isCounter?: boolean;
 }
 
+// 1. STAT TEXT SIZE INCREASED FOR MOBILE (text-3xl)
 function StatItem({ value, label, suffix = '', tooltip, isCounter = false }: StatItemProps) {
   return (
     <motion.div variants={fadeInUp} className="text-center relative group cursor-help px-1">
-      <div className="text-lg sm:text-3xl md:text-4xl font-bold text-accent-blue transition-colors group-hover:text-blue-400 leading-tight truncate">
+      <div className="text-3xl md:text-4xl font-bold text-accent-blue transition-colors group-hover:text-blue-400 leading-tight truncate">
         {isCounter && typeof value === 'number' ? <Counter end={value} /> : value}{suffix}
       </div>
-      <div className="text-[10px] sm:text-xs md:text-sm text-muted-foreground mt-1 transition-colors group-hover:text-foreground leading-tight">
+      <div className="text-[11px] sm:text-xs md:text-sm text-muted-foreground mt-1 transition-colors group-hover:text-foreground leading-tight">
         {label}
       </div>
       
@@ -204,11 +205,9 @@ export function Hero() {
   const blobScale = useMotionValue(1);
   const blobOpacity = useMotionValue(0.3);
   
-  // MotionValues for drop-shadows to ensure zero-flicker transitions
   const textShadowOpacity = useMotionValue(0.4);
   const medalShadowOpacity = useMotionValue(0.3);
 
-  // Speed Multiplier Spring is the "Gas Pedal" - it smooths out the transition from 0 to 1
   const speedMultiplier = useSpring(isMinimal ? 0 : isLowPower ? 0.2 : 1, { stiffness: 40, damping: 20 });
 
   useEffect(() => {
@@ -220,14 +219,11 @@ export function Hero() {
     const dSec = delta / 1000;
     const m = speedMultiplier.get();
 
-    // 1. Text Gradient Logic
     if (isMinimal) {
-      // Shutdown Decay
       const currentGPos = gradientPos.get();
       gradientPos.set(currentGPos + (0 - currentGPos) * 0.04); 
       gradientDirection.current = 1;
     } else {
-      // Active Ping-Pong
       let gP = gradientPos.get() + (40 * m * dSec * gradientDirection.current);
       if (gP >= 100) {
         gP = 100 - (gP - 100);
@@ -239,18 +235,14 @@ export function Hero() {
       gradientPos.set(gP);
     }
 
-    // 2. Hardware-Accelerated Shadow Fading (Bidirectional)
     const targetTextAlpha = isMinimal ? 0 : 0.4;
     const targetMedalAlpha = isMinimal ? 0 : 0.3;
     textShadowOpacity.set(textShadowOpacity.get() + (targetTextAlpha - textShadowOpacity.get()) * 0.08);
     medalShadowOpacity.set(medalShadowOpacity.get() + (targetMedalAlpha - medalShadowOpacity.get()) * 0.08);
 
-    // 3. Physical Sine Wave Synthesis
-    // timeRef only increments when speed is > 0, ensuring we resume where we left off
     timeRef.current += dSec * m;
     const t = timeRef.current;
 
-    // We calculate targets based on mode, then interpolate to them to ensure no jumps
     const targetFloatImg = isMinimal ? 0 : Math.sin(t * 1.04) * -7.5 - 7.5;
     const targetFloatMedal = isMinimal ? 0 : Math.sin(t * 2.09) * -2.5 - 2.5;
     const targetBlobScale = isMinimal ? 1 : 1.1 + Math.sin(t * 0.78) * 0.1;
@@ -265,7 +257,6 @@ export function Hero() {
   const bgPosString = useTransform(gradientPos, v => `${v}% 50%`);
   const textFilterString = useTransform(textShadowOpacity, v => `drop-shadow(0 0 12px rgba(59, 130, 246, ${v}))`);
   const medalFilterString = useTransform(medalShadowOpacity, v => `drop-shadow(0px 10px 15px rgba(14, 165, 233, ${v}))`);
-  // --------------------------------------------------
 
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
@@ -280,7 +271,6 @@ export function Hero() {
   return (
     <section className="relative min-h-screen flex flex-col justify-center pt-32 md:pt-20 pb-16 overflow-hidden bg-background">
       
-      {/* Animated Background Blobs - Handled exclusively by the physics engine */}
       <motion.div 
         className={`absolute top-1/4 right-0 w-96 h-96 bg-accent-blue/10 rounded-full transition-[filter] duration-1000 ${
           isLowPower ? 'blur-2xl' : 'blur-3xl'
@@ -316,7 +306,8 @@ export function Hero() {
 
             <motion.div variants={fadeInUp}>
               <p className="text-lg text-muted-foreground mb-2">Hello, I'm</p>
-              <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold mb-4 flex flex-col items-start">
+              {/* 2. ONE LINER NAME FIX FOR MOBILE */}
+              <h1 className="text-4xl min-[400px]:text-[2.6rem] sm:text-5xl lg:text-7xl font-bold mb-4 flex flex-wrap items-center gap-x-2 sm:gap-x-3">
                 <span className="text-foreground">Karl Philip</span>
                 <motion.span 
                   className="leading-tight py-2 inline-block w-fit"
@@ -368,7 +359,8 @@ export function Hero() {
               </Magnetic>
             </motion.div>
 
-            <motion.div variants={staggerContainer} className="grid grid-cols-4 gap-2 sm:gap-6 w-full">
+            {/* 3. 2x2 GRID FOR MOBILE (grid-cols-2) */}
+            <motion.div variants={staggerContainer} className="grid grid-cols-2 sm:grid-cols-4 gap-y-8 gap-x-4 sm:gap-6 w-full mb-8 sm:mb-0">
               <StatItem 
                 value={<OrdinalSequence sequence={['1st', '2nd', '3rd']} />} 
                 label="Year Standing" 
@@ -401,7 +393,7 @@ export function Hero() {
             className="order-1 lg:order-2 flex justify-center lg:justify-end"
           >
             <motion.div 
-              className="relative group cursor-zoom-in"
+              className="relative group cursor-zoom-in mt-6 sm:mt-0"
               onClick={() => setIsImageModalOpen(true)}
               style={{ y: floatImgY }}
             >

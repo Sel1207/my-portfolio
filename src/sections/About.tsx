@@ -1,6 +1,6 @@
-import { useRef, useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { motion, useMotionValue, useSpring, useTransform, useAnimationFrame } from 'framer-motion';
-// 1. Connect to the global performance engine
+// Connect to the global performance engine
 import { usePerformance } from '@/context/PerformanceContext'; 
 import { GraduationCap, Calendar, MapPin, Award, BookOpen, Lightbulb, Cpu, Code, ChevronRight } from 'lucide-react';
 import { SpotlightCard } from '@/components/SpotlightCard';
@@ -26,14 +26,11 @@ const fadeInUp = {
 };
 
 export function About() {
-  // 2. Destructure global Tri-Mode state
   const { isLowPower, isMinimal } = usePerformance();
 
-  // --- SEAMLESS PHYSICS ENGINE FOR ALL GRADIENTS ---
   const gradientPos = useMotionValue(0);
   const gradientDirection = useRef(1);
 
-  // TRI-MODE THROTTLE: Minimal = 0 (Stop), Performance = 0.2 (Slow), Visual = 1 (Fast)
   const speedMultiplier = useSpring(isMinimal ? 0 : isLowPower ? 0.2 : 1, { stiffness: 40, damping: 20 });
 
   useEffect(() => {
@@ -41,18 +38,15 @@ export function About() {
   }, [isMinimal, isLowPower, speedMultiplier]);
 
   useAnimationFrame((time, delta) => {
-    if (delta > 100) delta = 16; // Safety catch for browser tab switching
+    if (delta > 100) delta = 16; 
     const dSec = delta / 1000;
     const m = speedMultiplier.get();
 
     if (isMinimal) {
-      // SETTLE AT BLUE: Smoothly glide the gradient back to 0% without teleporting or flickering
-      // Using 0.03 decay for an ultra-smooth, graceful sweep matching the Hero section
       const currentGPos = gradientPos.get();
       gradientPos.set(currentGPos + (0 - currentGPos) * 0.03);
-      gradientDirection.current = 1; // Reset direction so it flows right when re-enabled
+      gradientDirection.current = 1; 
     } else {
-      // Ping-Pong Gradient Math (0% -> 100% -> 0%)
       let gP = gradientPos.get() + (40 * m * dSec * gradientDirection.current);
       if (gP >= 100) {
         gP = 100 - (gP - 100);
@@ -66,12 +60,11 @@ export function About() {
   });
 
   const bgPosString = useTransform(gradientPos, v => `${v}% 50%`);
-  // --------------------------------------------------
 
   return (
     <section id="about" className="py-24 lg:py-32 relative bg-background overflow-hidden">
       
-      {/* Subtle Background Glow - CSS fixed to prevent dropping the blur filter during the fade-out */}
+      {/* Subtle Background Glow */}
       <div className={`absolute top-1/2 left-0 -translate-y-1/2 w-[500px] h-[500px] rounded-full pointer-events-none transition-opacity duration-1000 bg-accent-blue/5 ${
         isLowPower ? 'blur-[60px]' : 'blur-[100px]'
       } ${
@@ -92,80 +85,115 @@ export function About() {
                 <span className={`w-2 h-2 rounded-full bg-accent-blue relative z-10 ${isMinimal || isLowPower ? '' : 'animate-pulse'}`} />
                 <span className="text-accent-blue text-xs font-bold uppercase tracking-widest relative z-10">Get to Know Me</span>
                 
-                {/* FAST SHINE: Cleanly disabled in Performance & Minimal Mode */}
-                {!isLowPower && !isMinimal && (
-                  <motion.div 
-                    className="absolute top-0 bottom-0 w-[150%] bg-gradient-to-r from-transparent via-white/40 dark:via-white/20 to-transparent -skew-x-12 z-0"
-                    animate={{ left: ['-100%', '200%'] }}
-                    transition={{ duration: 1.5, repeat: Infinity, repeatDelay: 3.5, ease: "easeInOut" }}
-                  />
-                )}
+                <motion.div 
+                  className="absolute top-0 bottom-0 w-[150%] bg-gradient-to-r from-transparent via-white/40 dark:via-white/20 to-transparent -skew-x-12 z-0"
+                  animate={{ 
+                    left: ['-100%', '200%'],
+                    opacity: isMinimal || isLowPower ? 0 : 1
+                  }}
+                  transition={{ 
+                    left: { duration: 1.5, repeat: Infinity, repeatDelay: 3.5, ease: "easeInOut" },
+                    opacity: { duration: 0.5 }
+                  }}
+                />
               </div>
             </motion.div>
             
             <h2 className="text-4xl md:text-5xl font-bold mb-6 text-foreground tracking-tight">
               Engineering the{' '}
               <motion.span 
-                className="inline-block"
+                animate={{
+                  backgroundImage: isMinimal 
+                    ? "linear-gradient(135deg, rgb(14, 165, 233), rgb(14, 165, 233), rgb(14, 165, 233), rgb(14, 165, 233))"
+                    : "linear-gradient(135deg, rgb(14, 165, 233), rgb(59, 130, 246), rgb(139, 92, 246), rgb(14, 165, 233))",
+                  backgroundPosition: isMinimal ? "0% 50%" : ["0% 50%", "100% 50%", "0% 50%"],
+                }}
+                transition={{
+                  backgroundPosition: {
+                    duration: isMinimal ? 1 : (isLowPower ? 15 : 8),
+                    ease: isMinimal ? "easeOut" : "linear",
+                    repeat: isMinimal ? 0 : Infinity,
+                  },
+                  backgroundImage: { duration: 1, ease: "easeInOut" }
+                }}
                 style={{
-                  backgroundImage: "linear-gradient(135deg, rgb(14, 165, 233), rgb(59, 130, 246), rgb(139, 92, 246), rgb(14, 165, 233))",
                   backgroundSize: "300% 300%",
                   WebkitBackgroundClip: "text",
                   WebkitTextFillColor: "transparent",
                   backgroundClip: "text",
                   color: "transparent",
-                  backgroundPosition: bgPosString // Driven by physics engine smoothly
                 }}
               >
                 Future.
               </motion.span>
             </h2>
 
-            <div className="space-y-5 text-muted-foreground text-lg leading-relaxed">
+            {/* EXPANDED BIOGRAPHY: Added an extra paragraph to balance the vertical height */}
+            <div className="space-y-4 text-muted-foreground text-[1.05rem] leading-relaxed">
               <p>
                 I am a dedicated Electrical Engineering student in the <span className="text-foreground font-semibold">BMEE joint degree program</span> at Mapúa University. 
               </p>
               <p>
                 My academic focus centers on{' '}
                 <motion.span 
-                  className="font-bold inline-block"
+                  className="font-bold"
+                  animate={{
+                    backgroundImage: isMinimal 
+                      ? "linear-gradient(135deg, rgb(14, 165, 233), rgb(14, 165, 233), rgb(14, 165, 233), rgb(14, 165, 233))"
+                      : "linear-gradient(135deg, rgb(14, 165, 233), rgb(59, 130, 246), rgb(139, 92, 246), rgb(14, 165, 233))",
+                    backgroundPosition: isMinimal ? "0% 50%" : ["0% 50%", "100% 50%", "0% 50%"],
+                  }}
+                  transition={{
+                    backgroundPosition: {
+                      duration: isMinimal ? 1 : (isLowPower ? 15 : 8),
+                      ease: isMinimal ? "easeOut" : "linear",
+                      repeat: isMinimal ? 0 : Infinity,
+                    },
+                    backgroundImage: { duration: 1, ease: "easeInOut" }
+                  }}
                   style={{
-                    backgroundImage: "linear-gradient(135deg, rgb(14, 165, 233), rgb(59, 130, 246), rgb(139, 92, 246), rgb(14, 165, 233))",
                     backgroundSize: "300% 300%",
                     WebkitBackgroundClip: "text",
                     WebkitTextFillColor: "transparent",
                     backgroundClip: "text",
                     color: "transparent",
-                    backgroundPosition: bgPosString // Driven by physics engine smoothly
                   }}
                 >
-                  power system protection, operation, and automation
-                </motion.span>. 
-                I am driven by a commitment to designing reliable, fault-tolerant, and highly efficient electrical infrastructure.
+                  power system protection and automation
+                </motion.span>. I am driven by a commitment to designing and learning about reliable, fault-tolerant, and highly efficient electrical infrastructure.
               </p>
-              <p className="text-base">
+              <p>
                 Beyond foundational circuitry, I bridge the gap between hardware and software. My technical stack includes professional illumination planning, industrial automation logic, and rigorous statistical analysis.
+              </p>
+              <p>
+                Through active leadership in engineering organizations, I thrive in collaborative environments. I approach every challenge—whether simulating power grids or configuring systems—with precision and a continuous drive to innovate.
               </p>
             </div>
 
-            {/* --- MOBILE UI FIX: Expertise Spotlight Cards (Forced 1 Row) --- */}
-            <div className="grid grid-cols-3 gap-2 sm:gap-4 mt-10">
-              {expertiseAreas.map((area, index) => (
+            {/* COMPACT CARDS: Tighter padding, smaller fonts, sleek layout */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mt-8">
+              {expertiseAreas.map((area) => (
                 <motion.div key={area.title} whileHover={isMinimal || isLowPower ? {} : { y: -5 }} transition={{ type: "spring", stiffness: 300 }}>
-                  <SpotlightCard className="p-3 sm:p-5 h-full border border-border/50 bg-card/50 backdrop-blur-sm flex flex-col items-center sm:items-start text-center sm:text-left group">
-                    <div className={`p-1.5 sm:p-2 rounded-lg bg-accent-blue/10 mb-2 sm:mb-4 transition-colors ${isMinimal ? '' : 'group-hover:bg-accent-blue/20'}`}>
-                      <area.icon className="h-4 w-4 sm:h-6 sm:w-6 text-accent-blue" />
+                  <SpotlightCard className="p-4 h-full border border-border/50 bg-card/50 backdrop-blur-sm flex flex-col items-start text-left group">
+                    
+                    {/* SLEEK ICON WRAPPER: Compact square on mobile, small pill on desktop */}
+                    <div className={`flex items-center rounded-lg bg-accent-blue/10 mb-3 transition-colors ${isMinimal ? '' : 'group-hover:bg-accent-blue/20'} 
+                      w-10 h-10 justify-center 
+                      sm:w-auto sm:h-auto sm:px-3 sm:py-1.5 sm:justify-start
+                    `}>
+                      <area.icon className="h-5 w-5 text-accent-blue" />
                     </div>
-                    <h4 className="font-bold text-[10px] sm:text-sm mb-1 sm:mb-2 text-foreground leading-tight">{area.title}</h4>
-                    <p className="text-[8px] sm:text-xs text-muted-foreground leading-snug line-clamp-2 sm:line-clamp-none">{area.description}</p>
+
+                    <h4 className="font-bold text-sm mb-1 text-foreground leading-tight">{area.title}</h4>
+                    <p className="text-xs text-muted-foreground leading-relaxed">{area.description}</p>
                   </SpotlightCard>
                 </motion.div>
               ))}
             </div>
 
-            <div className="flex items-center gap-2 sm:gap-3 mt-8 sm:mt-10 text-muted-foreground font-medium bg-muted/50 w-fit px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg border border-border">
-              <MapPin className="h-3 w-3 sm:h-4 sm:w-4 text-accent-blue" />
-              <span className="text-xs sm:text-sm">Based in Arayat, Pampanga, Philippines</span>
+            <div className="flex items-center gap-2 sm:gap-3 mt-8 text-muted-foreground font-medium bg-muted/50 w-fit px-4 py-2 rounded-lg border border-border">
+              <MapPin className="h-4 w-4 text-accent-blue" />
+              <span className="text-sm">Based in Arayat, Pampanga, Philippines</span>
             </div>
           </motion.div>
 
@@ -182,7 +210,6 @@ export function About() {
             </div>
 
             <div className="relative">
-              {/* Sleek Gradient Timeline Line */}
               <div className="absolute left-[19px] sm:left-6 top-6 bottom-6 w-[2px] bg-gradient-to-b from-accent-blue via-border to-transparent z-0" />
               
               <div className="space-y-6 sm:space-y-10">
@@ -203,21 +230,20 @@ export function About() {
                           : 'bg-background border-2 border-border transition-all duration-300'
                       } ${!isLowPower && !isMinimal && !item.isActive ? 'group-hover:border-accent-blue/50 group-hover:scale-110 group-hover:shadow-[0_0_15px_rgba(59,130,246,0.2)]' : ''}`}
                       initial={item.isActive ? { scale: 1.1 } : {}}
-                      // PERFORMANCE MODE: Disable hover physics
                       whileHover={item.isActive && !isLowPower && !isMinimal ? { scale: 1.2, rotate: 5 } : {}}
                       transition={item.isActive && !isMinimal ? { 
                         scale: { type: "spring", stiffness: 300, damping: 15 },
                         rotate: { type: "spring", stiffness: 300, damping: 15 } 
                       } : {}}
-                      // Gradient syncs with the rest of the page via physics engine
-                      style={item.isActive ? {
-                        backgroundImage: "linear-gradient(135deg, rgb(14, 165, 233), rgb(59, 130, 246), rgb(139, 92, 246), rgb(14, 165, 233))",
-                        backgroundSize: "300% 300%",
-                        backgroundPosition: bgPosString
+                      animate={item.isActive ? {
+                        backgroundImage: isMinimal 
+                          ? "linear-gradient(135deg, rgb(14, 165, 233), rgb(14, 165, 233), rgb(14, 165, 233), rgb(14, 165, 233))"
+                          : "linear-gradient(135deg, rgb(14, 165, 233), rgb(59, 130, 246), rgb(139, 92, 246), rgb(14, 165, 233))",
+                        backgroundPosition: isMinimal ? "0% 50%" : ["0% 50%", "100% 50%", "0% 50%"],
                       } : {}}
+                      style={item.isActive ? { backgroundSize: "300% 300%" } : {}}
                     >
                       {item.isActive && !isMinimal && (
-                        // PERFORMANCE MODE: Downshift the harsh ping to a gentle pulse
                         <div className={`absolute inset-0 rounded-xl border border-white/50 opacity-20 pointer-events-none ${isLowPower ? 'animate-pulse' : 'animate-ping'}`} />
                       )}
                       
@@ -234,7 +260,6 @@ export function About() {
                       </motion.div>
                     </motion.div>
 
-                    {/* Timeline Content Card */}
                     <SpotlightCard className={`p-4 sm:p-6 transition-all duration-300 ${item.isActive ? 'border-accent-blue/30 bg-accent-blue/5' : `border-border/50 ${isMinimal ? '' : 'hover:border-accent-blue/30'}`}`}>
                       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 mb-2">
                         <h4 className="font-bold text-foreground text-base sm:text-lg leading-tight">{item.degree}</h4>

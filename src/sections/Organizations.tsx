@@ -1,5 +1,5 @@
-import { useRef, useEffect } from 'react';
-import { motion, useMotionValue, useSpring, useTransform, useAnimationFrame } from 'framer-motion';
+import { useEffect } from 'react';
+import { motion } from 'framer-motion';
 // 1. Connect to the global Tri-Mode performance engine
 import { usePerformance } from '@/context/PerformanceContext'; 
 import { Calendar, Award, Zap, BookOpen, Microscope, Globe } from 'lucide-react';
@@ -12,14 +12,8 @@ interface Organization {
   icon: React.ElementType;
 }
 
+// Reordered exactly as requested: Top 3, Bottom 2
 const organizations: Organization[] = [
-  {
-    name: "Mapúa University DOST Scholars' Association",
-    role: 'Member',
-    period: 'Oct 2023 - Present',
-    description: 'Active member of the DOST scholars community, participating in academic excellence programs and community service activities.',
-    icon: Award,
-  },
   {
     name: 'Institute of Integrated Electrical Engineers Philippines - MU',
     role: 'Member',
@@ -28,11 +22,11 @@ const organizations: Organization[] = [
     icon: Zap,
   },
   {
-    name: 'Physics Society of Mapua',
-    role: 'Member',
-    period: 'Oct 2023 - Present',
-    description: 'Academic organization member dedicated to promoting advanced physics education, theoretical discussions, and research.',
-    icon: Microscope,
+    name: 'IEEE Philippines - Mapúa University',
+    role: 'Officer',
+    period: 'Sep 2024 - Present',
+    description: "Leading student branch initiatives for the world's largest technical professional organization to foster engineering innovation and networking.",
+    icon: Globe,
   },
   {
     name: 'The Mapúa Society of Double Degree and Joint Program',
@@ -42,55 +36,24 @@ const organizations: Organization[] = [
     icon: BookOpen,
   },
   {
-    name: 'IEEE Philippines - Mapúa University',
-    role: 'Officer',
-    period: 'Sep 2024 - Present',
-    description: "Leading student branch initiatives for the world's largest technical professional organization to foster engineering innovation and networking.",
-    icon: Globe,
+    name: 'Physics Society of Mapua',
+    role: 'Member',
+    period: 'Oct 2023 - Present',
+    description: 'Academic organization member dedicated to promoting advanced physics education, theoretical discussions, and research.',
+    icon: Microscope,
+  },
+  {
+    name: "Mapúa University DOST Scholars' Association",
+    role: 'Member',
+    period: 'Oct 2023 - Present',
+    description: 'Active member of the DOST scholars community, participating in academic excellence programs and community service activities.',
+    icon: Award,
   },
 ];
 
 export function Organizations() {
   // 2. Destructure global Tri-Mode state
   const { isLowPower, isMinimal } = usePerformance();
-
-  // --- SEAMLESS PHYSICS ENGINE FOR ALL GRADIENTS ---
-  const gradientPos = useMotionValue(0);
-  const gradientDirection = useRef(1);
-
-  // TRI-MODE THROTTLE: Minimal = 0 (Stop), Performance = 0.2 (Slow), Visual = 1 (Fast)
-  const speedMultiplier = useSpring(isMinimal ? 0 : isLowPower ? 0.2 : 1, { stiffness: 40, damping: 20 });
-
-  useEffect(() => {
-    speedMultiplier.set(isMinimal ? 0 : isLowPower ? 0.2 : 1);
-  }, [isMinimal, isLowPower, speedMultiplier]);
-
-  useAnimationFrame((time, delta) => {
-    if (delta > 100) delta = 16; // Safety catch for browser tab switching
-    const dSec = delta / 1000;
-    const m = speedMultiplier.get();
-
-    if (isMinimal) {
-      // SETTLE AT BLUE: Smoothly glide the gradient back to 0% without teleporting
-      const currentGPos = gradientPos.get();
-      gradientPos.set(currentGPos + (0 - currentGPos) * 0.1); 
-      gradientDirection.current = 1; 
-    } else {
-      // Ping-Pong Gradient Math (0% -> 100% -> 0%)
-      let gP = gradientPos.get() + (40 * m * dSec * gradientDirection.current);
-      if (gP >= 100) {
-        gP = 100 - (gP - 100);
-        gradientDirection.current = -1;
-      } else if (gP <= 0) {
-        gP = Math.abs(gP);
-        gradientDirection.current = 1;
-      }
-      gradientPos.set(gP);
-    }
-  });
-
-  const bgPosString = useTransform(gradientPos, v => `${v}% 50%`);
-  // --------------------------------------------------
 
   return (
     <section 
@@ -125,30 +88,50 @@ export function Organizations() {
               <span className={`w-2 h-2 rounded-full bg-sky-500 relative z-10 ${isMinimal || isLowPower ? '' : 'animate-pulse'}`} />
               <span className="text-sky-400 text-xs font-bold uppercase tracking-widest relative z-10">Extracurricular</span>
               
-              {/* FAST SHINE: Cleanly disabled in Performance & Minimal Mode */}
-              {!isLowPower && !isMinimal && (
-                <motion.div 
-                  className="absolute top-0 bottom-0 w-[150%] bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12 z-0"
-                  animate={{ left: ['-100%', '200%'] }}
-                  transition={{ duration: 0.8, repeat: Infinity, repeatDelay: 3.5, ease: "easeInOut" }}
-                />
-              )}
+              {/* FAST SHINE: Now smoothly fades to opacity 0 instead of vanishing/teleporting */}
+              <motion.div 
+                className="absolute top-0 bottom-0 w-[150%] bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12 z-0"
+                animate={{ 
+                  left: ['-100%', '200%'],
+                  opacity: isLowPower || isMinimal ? 0 : 1
+                }}
+                transition={{ 
+                  left: { duration: 0.8, repeat: Infinity, repeatDelay: 3.5, ease: "easeInOut" },
+                  opacity: { duration: 0.5, ease: "easeInOut" } // Smooth fade out
+                }}
+              />
             </div>
           </motion.div>
 
-          {/* Uniform Gradient Header Wired to Physics Engine */}
+          {/* NATIVE FRAMER MOTION GRADIENT: Butter-smooth crossfading of colors */}
           <h2 className="text-4xl md:text-5xl font-bold mb-4 tracking-tight">
             Professional{' '}
             <motion.span 
               className="inline-block"
+              animate={{
+                // Smoothly blends the entire gradient string into a solid sky blue in Minimal mode
+                backgroundImage: isMinimal 
+                  ? "linear-gradient(135deg, rgb(14, 165, 233), rgb(14, 165, 233), rgb(14, 165, 233), rgb(14, 165, 233))"
+                  : "linear-gradient(135deg, rgb(14, 165, 233), rgb(59, 130, 246), rgb(139, 92, 246), rgb(14, 165, 233))",
+                backgroundPosition: isMinimal ? "0% 50%" : ["0% 50%", "100% 50%", "0% 50%"],
+              }}
+              transition={{
+                backgroundPosition: {
+                  duration: isMinimal ? 1 : (isLowPower ? 15 : 8),
+                  ease: isMinimal ? "easeOut" : "linear",
+                  repeat: isMinimal ? 0 : Infinity,
+                },
+                backgroundImage: {
+                  duration: 1, // Smoothly crossfades the colors over 1 second
+                  ease: "easeInOut"
+                }
+              }}
               style={{
-                backgroundImage: "linear-gradient(135deg, rgb(14, 165, 233), rgb(59, 130, 246), rgb(139, 92, 246), rgb(14, 165, 233))",
                 backgroundSize: "300% 300%",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
                 backgroundClip: "text",
                 color: "transparent",
-                backgroundPosition: bgPosString // Settles to 0% smoothly on Minimal Mode
               }}
             >
               Organizations
@@ -159,8 +142,8 @@ export function Organizations() {
           </p>
         </motion.div>
 
-        {/* Organizations Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Organizations Grid (Centered Flex Wrap layout) */}
+        <div className="flex flex-wrap justify-center gap-6">
           {organizations.map((org, index) => (
             <motion.div
               key={org.name}
@@ -168,22 +151,17 @@ export function Organizations() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: index * 0.1 }}
-              // BASIC HOVERS RESTORED: hover:border-sky-500/50 is now active everywhere for UI consistency.
-              // Heavy motion (-translate-y-1 and heavy shadow) is still disabled in Minimal/LowPower.
-              className={`group relative bg-slate-900/80 backdrop-blur-sm rounded-2xl p-6 border border-slate-700/50 hover:border-sky-500/50 transition-all duration-500 overflow-hidden flex flex-col h-full ${
+              className={`w-full md:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)] group relative bg-slate-900/80 backdrop-blur-sm rounded-2xl p-6 border border-slate-700/50 hover:border-sky-500/50 transition-all duration-500 overflow-hidden flex flex-col ${
                 isLowPower || isMinimal ? '' : 'hover:-translate-y-1 hover:shadow-[0_8px_30px_rgb(14,165,233,0.1)]'
               }`}
             >
-              {/* Subtle hover gradient inside card - Hidden in Minimal mode to prevent excess repaints */}
               <div className={`absolute inset-0 bg-gradient-to-br from-sky-500/5 to-blue-500/5 opacity-0 transition-opacity duration-500 pointer-events-none ${isLowPower || isMinimal ? 'hidden' : 'group-hover:opacity-100'}`} />
               
               <div className="relative z-10 flex flex-col flex-grow">
-                {/* Icon - Hover colors restored for consistency */}
                 <div className="w-12 h-12 rounded-xl bg-slate-800 flex items-center justify-center mb-5 border border-slate-700 group-hover:bg-sky-500/20 group-hover:border-sky-500/30 transition-colors shadow-sm">
                   <org.icon className="h-6 w-6 text-sky-400" />
                 </div>
 
-                {/* Content */}
                 <h3 className="font-bold text-white mb-3 leading-snug pr-4">{org.name}</h3>
                 
                 <div className="flex flex-wrap items-center gap-2 mb-4">
@@ -223,7 +201,6 @@ export function Organizations() {
             { value: "3", label: "Academic Orgs" },
           ].map((stat, i) => (
             <div key={i} className="text-center group">
-              {/* PERFORMANCE/MINIMAL MODE: Disables scale transition on hover */}
               <div className={`text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-blue-500 mb-2 transition-transform duration-300 ${isLowPower || isMinimal ? '' : 'group-hover:scale-110'}`}>
                 {stat.value}
               </div>

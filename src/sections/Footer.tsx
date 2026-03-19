@@ -56,7 +56,6 @@ export function Footer() {
   // --------------------------------------------------
 
   // --- SMART VISIBILITY LOGIC (MOBILE OPTIMIZED) ---
-  // Uses Framer Motion's native scroll tracker to prevent mobile browser glitching
   const { scrollY } = useScroll();
   
   useMotionValueEvent(scrollY, "change", (latest) => {
@@ -65,10 +64,8 @@ export function Footer() {
 
   return (
     <>
-      {/* The footer keeps overflow-hidden to clip its background blurs, 
-        but the button is now completely separated from it below. 
-      */}
-      <footer className="relative py-12 border-t border-slate-900 bg-slate-950 overflow-hidden text-slate-300">
+      {/* Reduced base padding (py-8) for mobile, kept py-12 for larger screens */}
+      <footer className="relative py-8 sm:py-12 border-t border-slate-900 bg-slate-950 overflow-hidden text-slate-300">
         
         <div 
           className={`absolute inset-0 pointer-events-none transition-opacity duration-1000 ${isMinimal ? 'opacity-5' : 'opacity-20'}`} 
@@ -89,23 +86,24 @@ export function Footer() {
           <div className="flex flex-col items-center">
             
             <div 
-              className="flex items-center font-bold text-2xl tracking-tight mb-4 cursor-pointer hover:scale-105 transition-transform duration-300"
+              className="flex items-center font-bold text-xl sm:text-2xl tracking-tight mb-3 sm:mb-4 cursor-pointer hover:scale-105 transition-transform duration-300"
               onClick={scrollToTop}
             >
               <span className="bg-white text-slate-950 px-3 py-1.5 rounded-l-lg">KP</span>
               <span className="border-2 border-l-0 border-white text-white px-3 py-1 rounded-r-lg">Espino</span>
             </div>
 
-            <p className="text-slate-400 text-center mb-8 tracking-wide">
+            <p className="text-slate-400 text-xs sm:text-sm text-center mb-6 sm:mb-8 tracking-wide">
               Engineered for Excellence
             </p>
 
-            <nav className="flex flex-wrap justify-center gap-6 mb-8">
+            {/* Tighter gaps on mobile (gap-4) */}
+            <nav className="flex flex-wrap justify-center gap-4 sm:gap-6 mb-6 sm:mb-8">
               {['About', 'Projects', 'Skills', 'Organizations', 'Contact'].map((link) => (
                 <a
                   key={link}
                   href={`#${link.toLowerCase()}`}
-                  className="text-sm font-medium text-slate-400 hover:text-sky-400 transition-colors"
+                  className="text-xs sm:text-sm font-medium text-slate-400 hover:text-sky-400 transition-colors"
                   onClick={(e) => {
                     e.preventDefault();
                     const element = document.getElementById(link.toLowerCase());
@@ -120,7 +118,8 @@ export function Footer() {
               ))}
             </nav>
 
-            <div className="flex gap-4 mb-10">
+            {/* Tighter margins and slightly smaller icons on mobile */}
+            <div className="flex gap-3 sm:gap-4 mb-8 sm:mb-10">
               {[
                 { icon: Linkedin, href: 'https://www.linkedin.com/in/karl-philip-espino-388894346/', label: 'LinkedIn' },
                 { icon: Github, href: 'https://github.com/Sel1207', label: 'GitHub' },
@@ -131,29 +130,31 @@ export function Footer() {
                   href={social.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className={`w-12 h-12 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-400 transition-all duration-300 ${
+                  className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-400 transition-all duration-300 ${
                     isMinimal ? '' : 'hover:text-sky-400 hover:border-sky-400 hover:shadow-[0_0_15px_rgba(56,189,248,0.3)] hover:-translate-y-1'
                   }`}
                   aria-label={social.label}
                 >
-                  <social.icon className="h-5 w-5" />
+                  <social.icon className="h-4 w-4 sm:h-5 sm:w-5" />
                 </a>
               ))}
             </div>
 
-            <div className="flex flex-col items-center gap-3 mb-8 text-center px-4 max-w-2xl">
-              <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-sky-500 font-bold mb-1">
+            <div className="flex flex-col items-center gap-2 sm:gap-3 mb-6 sm:mb-8 text-center px-2 sm:px-4 max-w-2xl">
+              <div className="flex items-center gap-2 text-[9px] sm:text-[10px] uppercase tracking-[0.2em] text-sky-500 font-bold mb-1">
                 <Sparkles className="h-3 w-3" />
                 AI-Augmented Development
               </div>
-              <p className="text-xs text-slate-500 leading-relaxed italic">
+              <p className="text-[10px] sm:text-xs text-slate-500 leading-normal sm:leading-relaxed italic">
                 "This digital portfolio was developed through the strategic utilization of Artificial Intelligence (AI) to enhance code optimization and user experience design. Intended strictly for personal and professional presentation use."
               </p>
             </div>
 
-            <div className="w-full max-w-3xl h-px bg-slate-800/60 mb-8" />
+            {/* Reduced divider margin on mobile */}
+            <div className="w-full max-w-3xl h-px bg-slate-800/60 mb-5 sm:mb-8" />
 
-            <div className="flex flex-col sm:flex-row items-center gap-4 text-sm text-slate-500 mb-4">
+            {/* Tighter copyright row */}
+            <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4 text-[11px] sm:text-sm text-slate-500 mb-2 sm:mb-4">
               <span>© {currentYear} Karl Philip Espino. All rights reserved.</span>
               <span className="hidden sm:inline text-slate-700">•</span>
               <span className="tracking-wide">Arayat, Pampanga • Philippines</span>
@@ -162,7 +163,6 @@ export function Footer() {
         </div>
       </footer>
 
-      {/* --- BACK TO TOP BUTTON (Moved outside the Footer to escape overflow-hidden) --- */}
       <AnimatePresence>
         {showButton && (
           <motion.button
@@ -176,7 +176,6 @@ export function Footer() {
             aria-label="Back to top"
           >
             <ArrowUp className="w-6 h-6" />
-            {/* Subtle pulse removed in Performance and Minimal modes */}
             {!isMinimal && !isLowPower && (
               <div className="absolute inset-0 rounded-full bg-white/20 animate-ping pointer-events-none" />
             )}
