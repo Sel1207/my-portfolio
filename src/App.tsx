@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { ThemeProvider } from '@/hooks/useTheme';
-import { PerformanceProvider } from '@/context/PerformanceContext'; // MAKE SURE THIS IS IMPORTED
+import { PerformanceProvider } from '@/context/PerformanceContext'; 
 import { Navigation } from '@/sections/Navigation';
 import { Hero } from '@/sections/Hero';
 import { About } from '@/sections/About';
@@ -13,7 +13,8 @@ import { Contact } from '@/sections/Contact';
 import { Footer } from '@/sections/Footer';
 import { ScrollProgress } from '@/components/ScrollProgress';
 import { ChatWidget } from '@/components/ChatWidget'; 
-import { BootSequence } from '@/components/BootSequence'; // NEW COMPONENT
+import { BootSequence } from '@/components/BootSequence'; 
+import { Analytics } from '@vercel/analytics/react'; // 1. IMPORT ANALYTICS HERE
 import './App.css';
 
 // This is a "Wrapper" component. It makes things fade and slide up.
@@ -57,6 +58,9 @@ function App() {
           
           {/* Floating ChatWidget */}
           <ChatWidget />
+          
+          {/* 2. DROP THE COMPONENT HERE */}
+          <Analytics />
           
         </div>
       </PerformanceProvider>
