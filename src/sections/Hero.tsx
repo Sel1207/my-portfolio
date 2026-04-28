@@ -16,10 +16,11 @@ import {
   GraduationCap, 
   Award, 
   ZoomIn, 
-  X 
+  X,
+  Printer 
 } from 'lucide-react';
 
-// --- CUSTOM TYPEWRITER (Untouched, runs smoothly in all modes) ---
+// --- CUSTOM TYPEWRITER ---
 function TypewriterEffect() {
   const strings = [
     'BS/MS Electrical Engineering Student',
@@ -167,7 +168,6 @@ interface StatItemProps {
   isCounter?: boolean;
 }
 
-// 1. STAT TEXT SIZE INCREASED FOR MOBILE (text-3xl)
 function StatItem({ value, label, suffix = '', tooltip, isCounter = false }: StatItemProps) {
   return (
     <motion.div variants={fadeInUp} className="text-center relative group cursor-help px-1">
@@ -306,7 +306,6 @@ export function Hero() {
 
             <motion.div variants={fadeInUp}>
               <p className="text-lg text-muted-foreground mb-2">Hello, I'm</p>
-              {/* 2. ONE LINER NAME FIX FOR MOBILE */}
               <h1 className="text-4xl min-[400px]:text-[2.6rem] sm:text-5xl lg:text-7xl font-bold mb-4 flex flex-wrap items-center gap-x-2 sm:gap-x-3">
                 <span className="text-foreground">Karl Philip</span>
                 <motion.span 
@@ -356,9 +355,33 @@ export function Hero() {
                   </Button>
                 </a>
               </Magnetic>
+
+              {/* NEW: KP Studio.lab Button with Outline & Tooltip */}
+              <Magnetic>
+                <div className="relative group w-full sm:w-auto">
+                  <a 
+                    href="https://kp-studiolab-web.vercel.app" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="block w-full"
+                  >
+                    <Button size="lg" variant="outline" className="rounded-xl px-8 hover:bg-accent-blue/10 hover:text-accent-blue hover:border-accent-blue/50 transition-colors w-full border-2">
+                      KP Studio.lab <Printer className="ml-2 h-4 w-4" />
+                    </Button>
+                  </a>
+                  
+                  {/* Floating Friendly Tooltip */}
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50 translate-y-2 group-hover:translate-y-0 pointer-events-none">
+                    <div className="bg-slate-900/95 backdrop-blur-md border border-slate-700 rounded-xl p-3 shadow-2xl text-[11px] text-slate-300 leading-relaxed text-center">
+                      Check out my 3D printed products at this kiosk-like website! ✨🖨️
+                      <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-[1px] border-4 border-transparent border-t-slate-700" />
+                      <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-[2px] border-4 border-transparent border-t-slate-900" />
+                    </div>
+                  </div>
+                </div>
+              </Magnetic>
             </motion.div>
 
-            {/* 3. 2x2 GRID FOR MOBILE (grid-cols-2) */}
             <motion.div variants={staggerContainer} className="grid grid-cols-2 sm:grid-cols-4 gap-y-8 gap-x-4 sm:gap-6 w-full mb-8 sm:mb-0">
               <StatItem 
                 value={<OrdinalSequence sequence={['1st', '2nd', '3rd']} />} 
