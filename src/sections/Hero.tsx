@@ -334,8 +334,7 @@ export function Hero() {
             <motion.p variants={fadeInUp} className="text-lg text-muted-foreground max-w-xl mb-8">
               Third-year BS/MS Electrical Engineering student at{' '}
               <span className="text-foreground font-medium">Mapúa University</span> specializing in{' '}
-              <span className="text-accent-blue font-semibold">power system protection</span> and{' '}
-              <span className="text-accent-blue font-semibold">control</span>.
+              <span className="text-accent-blue font-semibold">power system protection</span>.
             </motion.p>
 
             <motion.div variants={fadeInUp} className="flex flex-wrap gap-4 mb-12">
@@ -367,7 +366,7 @@ export function Hero() {
                 tooltip="Calculated based on successfully completed academic units."
               />
               <StatItem 
-                value={6} 
+                value={7} 
                 label="President's Lister" 
                 suffix="x" 
                 isCounter={true}

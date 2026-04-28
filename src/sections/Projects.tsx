@@ -252,7 +252,7 @@ export function Projects() {
           <motion.div whileHover={isMinimal ? {} : { scale: 1.05 }} className="inline-block mb-4 cursor-default">
             <div className="relative overflow-hidden inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-sky-500/10 border border-sky-500/20">
               <span className={`w-2 h-2 rounded-full bg-sky-500 relative z-10 ${isMinimal || isLowPower ? '' : 'animate-pulse'}`} />
-              <span className="text-sky-400 text-xs font-bold uppercase tracking-widest relative z-10">My Work</span>
+              <span className="text-sky-400 text-xs font-bold uppercase tracking-widest relative z-10">Selected Work</span>
               {!isLowPower && !isMinimal && (
                 <motion.div 
                   className="absolute top-0 bottom-0 w-[150%] bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12 z-0"

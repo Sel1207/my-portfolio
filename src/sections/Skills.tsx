@@ -1,5 +1,5 @@
 import { useRef, useEffect } from 'react';
-import { motion, useMotionValue, useSpring, useTransform, useAnimationFrame, MotionValue } from 'framer-motion';
+import { motion, useMotionValue, useSpring, useTransform, useAnimationFrame } from 'framer-motion';
 // Connect to the global Tri-Mode performance engine
 import { usePerformance } from '@/context/PerformanceContext'; 
 import { 
@@ -7,13 +7,14 @@ import {
   Layers,
   Zap,
   Sliders,
-  Award
+  Award,
+  Star
 } from 'lucide-react';
 import { SpotlightCard } from '@/components/SpotlightCard';
 
 interface Skill {
   name: string;
-  level: number;
+  level: number; // Changed to 1-5 for star rating
 }
 
 interface SkillCategory {
@@ -27,62 +28,70 @@ const skillCategories: SkillCategory[] = [
     title: 'Software & Simulation',
     icon: Layers,
     skills: [
-      { name: 'DIALux evo', level: 90 },
-      { name: 'Fusion 360', level: 85 },
-      { name: 'AutoCAD', level: 88 },
-      { name: 'Python / Pandas', level: 80 },
-      { name: 'Fluid Sim', level: 75 },
-      { name: 'SketchUp', level: 70 },
+      { name: 'DIALux evo', level: 4 },
+      { name: 'Fusion 360', level: 4 },
+      { name: 'AutoCAD', level: 4 },
+      { name: 'Python / Pandas', level: 4 },
+      { name: 'Fluid Sim', level: 4 },
+      { name: 'SketchUp', level: 3 },
     ],
   },
   {
     title: 'Core Competencies',
     icon: Zap,
     skills: [
-      { name: 'Power System Protection', level: 92 },
-      { name: 'Omron PLC Programming', level: 85 },
-      { name: 'Materials Science', level: 80 },
-      { name: '3D Printing', level: 78 },
-      { name: 'Lighting Design', level: 90 },
-      { name: 'Industrial Automation', level: 85 },
+      { name: 'Power System Protection', level: 5 },
+      { name: 'Lighting Design', level: 5 },
+      { name: 'Omron PLC Programming', level: 5 },
+      { name: 'Industrial Automation', level: 5 },
+      { name: '3D Printing', level: 4 },
     ],
   },
 ];
 
 const trainingItems = [
   { name: 'DOST Scholar Program', issuer: 'Department of Science & Technology', status: 'Ongoing', icon: Award },
-  { name: 'Advanced Illumination Practice', issuer: 'Mapúa University', status: 'Completed', icon: Lightbulb },
+  { name: 'Illumination Design', issuer: 'Mapúa University', status: 'Completed', icon: Lightbulb },
   { name: 'Power Systems Analysis', issuer: 'Mapúa University', status: 'Completed', icon: Zap },
-  { name: 'Control Systems Design', issuer: 'Mapúa University', status: 'In Progress', icon: Sliders },
+  { name: 'Control Systems Design', issuer: 'Mapúa University', status: 'Completed', icon: Sliders },
 ];
 
-// --- UPGRADED PROGRESS BAR WIRED TO PHYSICS ENGINE ---
-function ProgressBar({ level, delay, bgPos, isMinimal }: { level: number; delay: number; bgPos: MotionValue<string>; isMinimal: boolean }) {
+// --- NEW STAR RATING COMPONENT ---
+function StarRating({ level, delay, isMinimal }: { level: number; delay: number; isMinimal: boolean }) {
   return (
-    <div className="h-2.5 w-full bg-secondary/50 dark:bg-slate-800/50 rounded-full overflow-hidden mt-2 shadow-inner">
-      <motion.div
-        initial={{ width: 0 }}
-        whileInView={{ width: `${level}%` }}
-        viewport={{ once: true }} 
-        transition={{ duration: 1.2, delay: delay, ease: "easeOut" }}
-        className={`h-full rounded-full relative overflow-hidden ${isMinimal ? '' : 'shadow-[0_0_10px_rgba(59,130,246,0.3)]'}`}
-      >
-        {/* INNER GRADIENT: Driven by the seamless useAnimationFrame physics */}
-        <motion.div
-          className="absolute inset-0 rounded-full w-full h-full"
-          style={{
-            backgroundImage: "linear-gradient(135deg, rgb(14, 165, 233), rgb(59, 130, 246), rgb(139, 92, 246), rgb(14, 165, 233))",
-            backgroundSize: "300% 300%",
-            backgroundPosition: bgPos
-          }}
-        />
-      </motion.div>
+    <div className="flex gap-1">
+      {[1, 2, 3, 4, 5].map((starIndex) => {
+        const isFilled = starIndex <= level;
+        return (
+          <motion.div
+            key={starIndex}
+            initial={{ opacity: 0, scale: 0.5, rotate: -30 }}
+            whileInView={{ opacity: 1, scale: 1, rotate: 0 }}
+            viewport={{ once: true }}
+            transition={{ 
+              duration: 0.4, 
+              delay: delay + (starIndex * 0.05), // Stagger each star slightly
+              type: "spring",
+              stiffness: 200,
+              damping: 10
+            }}
+          >
+            <Star 
+              className={`w-4 h-4 sm:w-[18px] sm:h-[18px] transition-all duration-300 ${
+                isFilled 
+                  ? `text-sky-500 dark:text-accent-blue fill-current ${isMinimal ? '' : 'drop-shadow-[0_0_8px_rgba(56,189,248,0.6)]'}` 
+                  : 'text-slate-200 dark:text-slate-800'
+              }`}
+              strokeWidth={isFilled ? 1 : 2}
+            />
+          </motion.div>
+        );
+      })}
     </div>
   );
 }
 
 export function Skills() {
-  // Destructure global Tri-Mode state
   const { isLowPower, isMinimal } = usePerformance();
 
   // --- SEAMLESS PHYSICS ENGINE ---
@@ -93,7 +102,6 @@ export function Skills() {
   const gradientPos = useMotionValue(0);
   const gradientDirection = useRef(1);
 
-  // TRI-MODE THROTTLE: Minimal = 0 (Stop), Performance = 0.2 (Slow), Visual = 1 (Fast)
   const speedMultiplier = useSpring(isMinimal ? 0 : isLowPower ? 0.2 : 1, { stiffness: 40, damping: 20 });
 
   useEffect(() => {
@@ -105,7 +113,7 @@ export function Skills() {
     const dSec = delta / 1000;
     const m = speedMultiplier.get();
 
-    // 1. Electricity Traces Math
+    // Electricity Traces
     let y1 = trace1Y.get() + (50 * m * dSec);
     if (y1 >= 100) y1 -= 200;
     trace1Y.set(y1);
@@ -118,9 +126,8 @@ export function Skills() {
     if (x3 >= 100) x3 -= 200;
     trace3X.set(x3);
 
-    // 2. Ping-Pong Gradient Math
+    // Title Gradient Ping-Pong
     if (isMinimal) {
-      // SETTLE AT BLUE: Smoothly glide the gradient back to 0%
       const currentGPos = gradientPos.get();
       gradientPos.set(currentGPos + (0 - currentGPos) * 0.1); 
       gradientDirection.current = 1; 
@@ -141,12 +148,11 @@ export function Skills() {
   const t2 = useTransform(trace2Y, v => `${v}%`);
   const t3 = useTransform(trace3X, v => `${v}%`);
   const bgPosString = useTransform(gradientPos, v => `${v}% 50%`);
-  // --------------------------------
 
   return (
     <section id="skills" className="py-24 lg:py-32 relative bg-background overflow-hidden transition-colors duration-300">
       
-      {/* Subtle Grid Pattern - Fades out in Minimal Mode */}
+      {/* Subtle Grid Pattern */}
       <div 
         className={`absolute inset-0 pointer-events-none transition-opacity duration-1000 ${isMinimal ? 'opacity-0' : 'opacity-[0.03] dark:opacity-10'}`} 
         style={{ 
@@ -155,7 +161,7 @@ export function Skills() {
         }} 
       />
 
-      {/* BACKGROUND GLOWS: Fades to 0 opacity on Minimal Mode */}
+      {/* BACKGROUND GLOWS */}
       <div className={`absolute top-0 right-0 w-[600px] h-[600px] rounded-full pointer-events-none transition-all duration-1000 ${
         isMinimal ? 'opacity-0' : isLowPower ? 'bg-accent-blue/5 blur-[60px] opacity-40' : 'bg-accent-blue/5 blur-[120px] opacity-100'
       }`} />
@@ -163,7 +169,7 @@ export function Skills() {
         isMinimal ? 'opacity-0' : isLowPower ? 'bg-purple-500/5 blur-[50px] opacity-40' : 'bg-purple-500/5 blur-[100px] opacity-100'
       }`} />
 
-      {/* CIRCUIT TRACES: Fades to 0 opacity on Minimal Mode */}
+      {/* CIRCUIT TRACES */}
       <motion.div animate={{ opacity: isMinimal ? 0 : 1 }} transition={{ duration: 1 }} className="absolute top-0 left-[20%] w-[1px] h-full bg-gradient-to-b from-transparent via-sky-500/30 dark:via-sky-400/80 to-transparent shadow-[0_0_10px_rgba(56,189,248,0.2)] dark:shadow-[0_0_10px_#38bdf8]" style={{ y: t1 }} />
       <motion.div animate={{ opacity: isMinimal ? 0 : 1 }} transition={{ duration: 1 }} className="absolute top-0 right-[25%] w-[1px] h-full bg-gradient-to-b from-transparent via-blue-500/30 dark:via-blue-500/80 to-transparent shadow-[0_0_10px_rgba(59,130,246,0.2)] dark:shadow-[0_0_10px_#3b82f6]" style={{ y: t2 }} />
       <motion.div animate={{ opacity: isMinimal ? 0 : 1 }} transition={{ duration: 1 }} className="absolute top-[30%] left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-sky-500/20 dark:via-sky-400/50 to-transparent shadow-[0_0_10px_rgba(56,189,248,0.2)] dark:shadow-[0_0_10px_#38bdf8]" style={{ x: t3 }} />
@@ -177,13 +183,11 @@ export function Skills() {
           viewport={{ once: true }}
           className="text-center max-w-2xl mx-auto mb-16"
         >
-          {/* Shimmer Badge */}
           <motion.div whileHover={isMinimal ? {} : { scale: 1.05 }} className="inline-block mb-4 cursor-default">
             <div className="relative overflow-hidden inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-sky-500/10 dark:bg-accent-blue/10 border border-sky-500/20 dark:border-accent-blue/20">
               <span className={`w-2 h-2 rounded-full bg-sky-500 dark:bg-accent-blue relative z-10 ${isMinimal || isLowPower ? '' : 'animate-pulse'}`} />
               <span className="text-sky-600 dark:text-accent-blue text-xs font-bold uppercase tracking-widest relative z-10">My Expertise</span>
               
-              {/* FAST SHINE: Disabled in Minimal & Low Power modes */}
               {!isLowPower && !isMinimal && (
                 <motion.div 
                   className="absolute top-0 bottom-0 w-[150%] bg-gradient-to-r from-transparent via-sky-300/40 dark:via-white/20 to-transparent -skew-x-12 z-0"
@@ -205,7 +209,7 @@ export function Skills() {
                 WebkitTextFillColor: "transparent",
                 backgroundClip: "text",
                 color: "transparent",
-                backgroundPosition: bgPosString // Settles to 0% smoothly on Minimal Mode
+                backgroundPosition: bgPosString 
               }}
             >
               Tools
@@ -234,18 +238,14 @@ export function Skills() {
                   <h3 className="text-xl font-bold text-foreground tracking-tight">{category.title}</h3>
                 </div>
 
-                <div className="space-y-6">
+                <div className="space-y-2">
                   {category.skills.map((skill, skillIndex) => (
-                    <div key={skill.name} className="group/skill">
-                      <div className="flex justify-between items-center mb-2">
-                        <span className={`font-semibold text-sm text-foreground transition-colors ${isMinimal ? '' : 'group-hover/skill:text-accent-blue'}`}>{skill.name}</span>
-                        <span className={`text-sm font-medium text-muted-foreground transition-colors ${isMinimal ? '' : 'group-hover/skill:text-foreground'}`}>{skill.level}%</span>
-                      </div>
-                      <ProgressBar
-                        level={skill.level}
+                    <div key={skill.name} className={`flex items-center justify-between p-3 rounded-lg transition-colors duration-300 ${isMinimal ? '' : 'hover:bg-foreground/5'}`}>
+                      <span className="font-semibold text-sm text-foreground">{skill.name}</span>
+                      <StarRating 
+                        level={skill.level} 
                         delay={0.2 + (skillIndex * 0.1)} 
-                        bgPos={bgPosString}
-                        isMinimal={isMinimal}
+                        isMinimal={isMinimal} 
                       />
                     </div>
                   ))}
@@ -274,7 +274,7 @@ export function Skills() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.1 }}
-                whileHover={isMinimal || isLowPower ? {} : { y: -5 }} // Disabled on Minimal
+                whileHover={isMinimal || isLowPower ? {} : { y: -5 }} 
               >
                 <SpotlightCard className={`p-5 h-full flex flex-col border border-border/50 transition-all group ${isMinimal ? '' : 'hover:border-accent-blue/30'}`}>
                   <div className="flex items-start justify-between mb-5">

@@ -129,12 +129,9 @@ export function About() {
             </h2>
 
             {/* EXPANDED BIOGRAPHY: Added an extra paragraph to balance the vertical height */}
-            <div className="space-y-4 text-muted-foreground text-[1.05rem] leading-relaxed">
+            <div className="space-y-4">
               <p>
-                I am a dedicated Electrical Engineering student in the <span className="text-foreground font-semibold">BMEE joint degree program</span> at Mapúa University. 
-              </p>
-              <p>
-                My academic focus centers on{' '}
+                My academic journey is deeply rooted in{' '}
                 <motion.span 
                   className="font-bold"
                   animate={{
@@ -159,14 +156,14 @@ export function About() {
                     color: "transparent",
                   }}
                 >
-                  power system protection and automation
-                </motion.span>. I am driven by a commitment to designing and learning about reliable, fault-tolerant, and highly efficient electrical infrastructure.
+                  power system protection
+                </motion.span>. I am fascinated by the unseen mechanisms that keep our electrical grids safe, resilient, and running smoothly.
               </p>
               <p>
-                Beyond foundational circuitry, I bridge the gap between hardware and software. My technical stack includes professional illumination planning, industrial automation logic, and rigorous statistical analysis.
+                For me, engineering is about more than just complex equations; it's about safeguarding the infrastructure we all rely on. I spend most of my time learning how to better detect faults, analyze grid stability, and understand how to protect networks as our energy landscape evolves.
               </p>
               <p>
-                Through active leadership in engineering organizations, I thrive in collaborative environments. I approach every challenge—whether simulating power grids or configuring systems—with precision and a continuous drive to innovate.
+                While I love the technical challenge of simulating power grids, I know I still have so much to learn. I really enjoy collaborating with my peers, sharing ideas, and working together to understand the intricacies of electrical systems as an aspiring engineer.
               </p>
             </div>
 

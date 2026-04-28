@@ -17,15 +17,15 @@ interface Certification {
 
 const certifications: Certification[] = [
   { title: 'DOST Scholar Program', issuer: 'Department of Science & Technology', date: '2023 - Present', status: 'ongoing', description: 'Prestigious scholarship program for outstanding students in science and technology fields.', credential: 'Ongoing Program' },
-  { title: 'Advanced Illumination Practice', issuer: 'Mapúa University', date: '2024', status: 'completed', description: 'Comprehensive coursework and practical application in lighting design and illumination engineering.' },
-  { title: 'Power Systems Analysis', issuer: 'Mapúa University', date: '2024', status: 'completed', description: 'Advanced study of power system modeling, analysis, and protection schemes.' },
-  { title: 'Control Systems Design', issuer: 'Mapúa University', date: '2024 - 2025', status: 'in-progress', description: 'Coursework covering classical and modern control theory with practical applications.' },
-  { title: 'PLC Programming Fundamentals', issuer: 'Mapúa University', date: '2024', status: 'completed', description: 'Industrial automation programming using Omron PLC platforms and ladder logic.' },
-  { title: '3D Modeling & CAD Design', issuer: 'Mapúa University', date: '2023 - 2024', status: 'completed', description: 'Professional training in AutoCAD, Fusion 360, and SketchUp for engineering design.' },
+  { title: 'Illumination Design', issuer: 'Mapúa University', date: '2026', status: 'completed', description: 'Comprehensive coursework and practical application in lighting design and illumination engineering.' },
+  { title: 'Power Systems Analysis', issuer: 'Mapúa University', date: '2025', status: 'completed', description: 'Advanced study of power system modeling, analysis, and protection schemes.' },
+  { title: 'Control Systems Design', issuer: 'Mapúa University', date: '2025', status: 'in-progress', description: 'Coursework covering classical and modern control theory with practical applications.' },
+  { title: 'Power System Protection', issuer: 'Mapúa University', date: '2026', status: 'in-progress', description: 'Power System Protection simulation through ETAP.' },
+  { title: '3D Modeling & CAD Design', issuer: 'Coursera', date: '2026', status: 'ongoing', description: 'Professional training in AutoCAD, Fusion 360, and SketchUp for engineering design.' },
 ];
 
 const achievements = [
-  { label: "President's Lister", count: '6x', description: 'Academic Excellence Award' },
+  { label: "President's Lister", count: '7x', description: 'Academic Excellence Award' },
   { label: 'With High Honors', count: 'SHS', description: 'Senior High School' },
   { label: 'With High Honors', count: 'JHS', description: 'Junior High School' },
   { label: 'Valedictorian', count: 'Elem', description: 'Elementary Graduate' },
